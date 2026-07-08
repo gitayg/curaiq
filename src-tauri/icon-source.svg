@@ -1,0 +1,25 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#141B26"/>
+      <stop offset="1" stop-color="#0A0D13"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="48%">
+      <stop offset="0" stop-color="#4C8DFF" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#4C8DFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.14"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="1024" height="1024" rx="230" fill="url(#bg)"/>
+  <rect x="3" y="3" width="1018" height="1018" rx="228" fill="none" stroke="url(#edge)" stroke-width="6"/>
+  <circle cx="512" cy="520" r="360" fill="url(#glow)"/>
+
+  <!-- three ascending chevrons, brightening upward = "raise" -->
+  <path d="M224,788 L512,532 L800,788" fill="none" stroke="#2F6FE0" stroke-width="96" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M224,602 L512,346 L800,602" fill="none" stroke="#4C8DFF" stroke-width="96" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M275,436 L512,224 L749,436" fill="none" stroke="#9FC2FF" stroke-width="96" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

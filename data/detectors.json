@@ -1,0 +1,206 @@
+{
+  "meta": {
+    "name": "RAISEME Tier-1 Detectors (seed)",
+    "version": "0.1.0",
+    "schema": "detector-v1",
+    "description": "Seed deterministic detectors for the 'Detect' class threats. Patterns are illustrative starting points to be tuned with fixtures. threatId references data/threats.json. combine: weighted_sum|any|all. thresholds.fire => confirm at Tier-1; thresholds.escalate => send to Tier-2 local LLM; below escalate => suppress.",
+    "defaults": { "combine": "weighted_sum", "thresholds": { "fire": 0.75, "escalate": 0.40 } }
+  },
+  "detectors": [
+    {
+      "id": "dlp.entity.credit_card",
+      "threatId": 1,
+      "appliesTo": ["prompt.submit", "content.paste", "file.upload"],
+      "signals": [
+        { "type": "entity", "kind": "CREDIT_CARD", "weight": 0.8 },
+        { "type": "regex", "pattern": "\\b(?:\\d[ -]*?){13,16}\\b", "weight": 0.4, "label": "card-like" }
+      ],
+      "combine": "weighted_sum",
+      "thresholds": { "fire": 0.7, "escalate": 0.4 }
+    },
+    {
+      "id": "dlp.entity.iban",
+      "threatId": 1,
+      "appliesTo": ["prompt.submit", "content.paste", "file.upload"],
+      "signals": [
+        { "type": "regex", "pattern": "\\b[A-Z]{2}\\d{2}[A-Z0-9]{11,30}\\b", "weight": 0.8, "label": "iban" }
+      ],
+      "combine": "any",
+      "thresholds": { "fire": 0.7, "escalate": 0.4 }
+    },
+    {
+      "id": "dlp.entity.national_id",
+      "threatId": 15,
+      "appliesTo": ["prompt.submit", "content.paste", "file.upload"],
+      "signals": [
+        { "type": "regex", "pattern": "\\b\\d{9}\\b", "weight": 0.45, "label": "9-digit-id" },
+        { "type": "keyword", "any": ["id number", "national id", "passport", "ssn", "social security", "ת\"ז", "תעודת זהות"], "weight": 0.45 }
+      ],
+      "combine": "weighted_sum",
+      "thresholds": { "fire": 0.75, "escalate": 0.4 }
+    },
+    {
+      "id": "dlp.secret.api_key",
+      "threatId": 1,
+      "appliesTo": ["prompt.submit", "content.paste", "file.upload"],
+      "signals": [
+        { "type": "regex", "pattern": "(sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|xox[baprs]-[A-Za-z0-9-]+)", "weight": 0.85, "label": "known-token" },
+        { "type": "keyword", "any": ["api key", "secret key", "access token", "bearer", "private key", "client_secret"], "weight": 0.3 }
+      ],
+      "combine": "weighted_sum",
+      "thresholds": { "fire": 0.7, "escalate": 0.4 }
+    },
+    {
+      "id": "dlp.pii.hr_sensitive",
+      "threatId": 15,
+      "appliesTo": ["prompt.submit", "content.paste", "file.upload"],
+      "signals": [
+        { "type": "entity", "kind": "EMAIL", "weight": 0.2 },
+        { "type": "entity", "kind": "PHONE", "weight": 0.2 },
+        { "type": "keyword", "any": ["salary", "compensation", "termination", "medical", "diagnosis", "performance review", "disciplinary", "resume", "cv"], "weight": 0.6 }
+      ],
+      "combine": "weighted_sum",
+      "thresholds": { "fire": 0.75, "escalate": 0.45 }
+    },
+    {
+      "id": "ip.source_or_strategy",
+      "threatId": 9,
+      "appliesTo": ["prompt.submit", "content.paste", "file.upload"],
+      "signals": [
+        { "type": "code", "kind": "ANY_SOURCE", "weight": 0.45 },
+        { "type": "keyword", "any": ["roadmap", "architecture", "proprietary", "confidential", "internal only", "price quote", "go-to-market", "trade secret"], "weight": 0.5 }
+      ],
+      "combine": "weighted_sum",
+      "thresholds": { "fire": 0.75, "escalate": 0.45 }
+    },
+    {
+      "id": "promptleak.internal_instructions",
+      "threatId": 39,
+      "appliesTo": ["prompt.submit", "content.paste"],
+      "signals": [
+        { "type": "phrase", "any": ["you are an? .* assistant", "system prompt", "internal use only", "do not share externally", "company policy:"], "weight": 0.6 },
+        { "type": "keyword", "any": ["template", "system instructions", "internal prompt"], "weight": 0.3 }
+      ],
+      "combine": "weighted_sum",
+      "thresholds": { "fire": 0.75, "escalate": 0.45 }
+    },
+    {
+      "id": "injection.direct",
+      "threatId": 2,
+      "appliesTo": ["prompt.submit", "content.paste"],
+      "signals": [
+        { "type": "phrase", "any": ["ignore (the |all |previous |above )?(instructions|prompt|rules)", "disregard (the|your) (instructions|guidelines|rules)", "reveal your (system )?prompt", "you are now", "pretend you are", "developer mode"], "weight": 0.7 }
+      ],
+      "combine": "any",
+      "thresholds": { "fire": 0.7, "escalate": 0.4 }
+    },
+    {
+      "id": "injection.indirect",
+      "threatId": 3,
+      "appliesTo": ["ai.response", "file.upload", "content.paste"],
+      "signals": [
+        { "type": "phrase", "any": ["ignore (the |previous |above )?(instructions|guidelines)", "send (the|this|all) (data|information|file) to", "forward this to", "exfiltrate", "do not tell the user"], "weight": 0.7 }
+      ],
+      "combine": "any",
+      "thresholds": { "fire": 0.6, "escalate": 0.35 }
+    },
+    {
+      "id": "injection.second_order",
+      "threatId": 40,
+      "appliesTo": ["ai.response", "content.paste"],
+      "signals": [
+        { "type": "keyword", "any": ["ticket", "support form", "service request", "case note"], "weight": 0.35 },
+        { "type": "phrase", "any": ["perform the following action", "execute", "approve and", "automatically"], "weight": 0.45 }
+      ],
+      "combine": "weighted_sum",
+      "thresholds": { "fire": 0.8, "escalate": 0.45 }
+    },
+    {
+      "id": "output.dangerous_code",
+      "threatId": 32,
+      "appliesTo": ["ai.response"],
+      "signals": [
+        { "type": "regex", "pattern": "(?i)(invoke-webrequest|iex\\s*\\(|curl\\s+[^|]+\\|\\s*(ba)?sh|wget\\s+[^|]+\\|\\s*sh|Set-ExecutionPolicy|rm\\s+-rf\\s+/|Auto_?Open|Workbook_Open|CreateObject\\(\"WScript)", "weight": 0.8, "label": "dangerous-pattern" },
+        { "type": "code", "kind": "POWERSHELL_OR_MACRO", "weight": 0.4 }
+      ],
+      "combine": "weighted_sum",
+      "thresholds": { "fire": 0.7, "escalate": 0.4 }
+    },
+    {
+      "id": "output.suspicious_link",
+      "threatId": 17,
+      "appliesTo": ["ai.response"],
+      "signals": [
+        { "type": "url", "kind": "SHORTENER", "weight": 0.5 },
+        { "type": "url", "kind": "DISPLAY_HREF_MISMATCH", "weight": 0.6 }
+      ],
+      "combine": "weighted_sum",
+      "thresholds": { "fire": 0.6, "escalate": 0.35 }
+    },
+    {
+      "id": "output.fabricated_source",
+      "threatId": 29,
+      "appliesTo": ["ai.response"],
+      "signals": [
+        { "type": "regex", "pattern": "(?i)(et al\\.|doi:|ISBN|\\bv\\.\\s|\\bU\\.S\\.\\s|section\\s+\\d+|article\\s+\\d+)", "weight": 0.4, "label": "citation-like" },
+        { "type": "url", "kind": "UNRESOLVABLE", "weight": 0.5 }
+      ],
+      "combine": "weighted_sum",
+      "thresholds": { "fire": 0.8, "escalate": 0.4 }
+    },
+    {
+      "id": "socialeng.bank_detail_change",
+      "threatId": 30,
+      "appliesTo": ["prompt.submit", "content.paste", "ai.response", "file.upload"],
+      "signals": [
+        { "type": "regex", "pattern": "\\b[A-Z]{2}\\d{2}[A-Z0-9]{11,30}\\b", "weight": 0.4, "label": "iban" },
+        { "type": "keyword", "any": ["account number", "routing number", "swift", "wire"], "weight": 0.3 },
+        { "type": "phrase", "any": ["changed our bank", "new bank details", "updated banking", "new account", "remittance to"], "weight": 0.5 }
+      ],
+      "combine": "weighted_sum",
+      "thresholds": { "fire": 0.8, "escalate": 0.45 }
+    },
+    {
+      "id": "socialeng.bec_urgency",
+      "threatId": 11,
+      "appliesTo": ["content.paste", "file.upload"],
+      "signals": [
+        { "type": "phrase", "any": ["urgent (payment|wire|transfer)", "as soon as possible", "keep this confidential", "are you at your desk", "need this done before"], "weight": 0.5 },
+        { "type": "keyword", "any": ["ceo", "cfo", "invoice", "gift card", "wire transfer"], "weight": 0.35 }
+      ],
+      "combine": "weighted_sum",
+      "thresholds": { "fire": 0.8, "escalate": 0.45 }
+    },
+    {
+      "id": "shadow.unapproved_tool",
+      "threatId": 7,
+      "appliesTo": ["tool.open"],
+      "signals": [
+        { "type": "allowlist", "kind": "AI_TOOL", "weight": 1.0, "label": "not-on-allowlist" }
+      ],
+      "combine": "any",
+      "thresholds": { "fire": 0.5, "escalate": 0.0 }
+    },
+    {
+      "id": "upload.sensitive_file",
+      "threatId": 27,
+      "appliesTo": ["file.upload"],
+      "signals": [
+        { "type": "keyword", "any": ["contract", "nda", "confidential", "salary", "passport", "agreement", "invoice"], "weight": 0.4, "scope": "filename" },
+        { "type": "entity", "kind": "ANY_PII", "weight": 0.5, "scope": "extracted_text" }
+      ],
+      "combine": "weighted_sum",
+      "thresholds": { "fire": 0.75, "escalate": 0.45 }
+    },
+    {
+      "id": "context.customer_mixing",
+      "threatId": 36,
+      "appliesTo": ["prompt.submit", "session.context"],
+      "signals": [
+        { "type": "heuristic", "kind": "FOREIGN_CONTEXT_TAG", "weight": 0.8, "label": "different-customer-than-session" }
+      ],
+      "combine": "any",
+      "thresholds": { "fire": 0.8, "escalate": 0.5 }
+    }
+  ]
+}

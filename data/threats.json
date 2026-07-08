@@ -1,0 +1,695 @@
+{
+  "meta": {
+    "name": "RAISEME Threat Rule-Base",
+    "version": "0.4.0",
+    "description": "AI-security threat matrix for office workers, translated to English. Each threat is a detection rule: example = trigger context, response = intervention. riskScore = severity x likelihood.",
+    "scoring": {
+      "severity": "1-5 (impact if it occurs)",
+      "likelihood": "1-5 (probability of occurrence)",
+      "riskScore": "severity x likelihood (1-25)",
+      "levels": {
+        "Critical": ">=20",
+        "High": "12-19",
+        "Medium": "6-11",
+        "Low": "<6"
+      }
+    }
+  },
+  "sources": {
+    "NIST": "https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.600-1.pdf",
+    "OWASP": "https://owasp.org/www-project-top-10-for-large-language-model-applications/",
+    "NCSC": "https://www.ncsc.gov.uk/blog-post/prompt-injection-is-not-sql-injection",
+    "OWASP_Agentic": "https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/",
+    "Microsoft_Copilot": "https://learn.microsoft.com/en-us/microsoft-365/copilot/microsoft-365-copilot-architecture-data-protection-auditing",
+    "FBI": "https://www.fbi.gov/file-repository/cyber-alerts/ai-data-security-best-practices-for-securing-data-used-to-train-and-operate-ai-systems-052225.pdf/view",
+    "Microsoft_Security": "https://www.microsoft.com/en-us/security/blog/2026/03/06/ai-as-tradecraft-how-threat-actors-operationalize-ai/",
+    "IC3": "https://www.ic3.gov/AnnualReport/Reports/2025_IC3Report.pdf"
+  },
+  "categories": [
+    "Information & Privacy",
+    "Prompt Injection",
+    "Add-ons & Tools",
+    "Permissions & Exposure",
+    "Unapproved Tools",
+    "Information Reliability",
+    "Social Engineering",
+    "Agents & Permissions",
+    "Ethics & Decision-Making",
+    "Output & Code",
+    "Meetings & Sharing",
+    "Data & Knowledge",
+    "Identity & Access",
+    "Operations & Costs"
+  ],
+  "threats": [
+    {
+      "id": 1,
+      "category": "Information & Privacy",
+      "threat": "Sensitive data leak",
+      "example": "Entering a contract, customer details, personal information, code, a legal document, or internal business information into an AI tool.",
+      "response": "Do not enter sensitive information into AI tools that are not organizationally approved. When in doubt, stop and ask a manager or information security.",
+      "severity": 5,
+      "likelihood": 4,
+      "riskScore": 20,
+      "riskLevel": "Critical",
+      "sources": [
+        "NIST",
+        "OWASP"
+      ]
+    },
+    {
+      "id": 2,
+      "category": "Prompt Injection",
+      "threat": "Direct Prompt Injection",
+      "example": "A direct instruction that tries to make the AI bypass policy, reveal information, or perform a forbidden action.",
+      "response": "Do not carry out unusual instructions that appear in the AI's response. Treat the AI as an assistive tool, not an authoritative source.",
+      "severity": 5,
+      "likelihood": 4,
+      "riskScore": 20,
+      "riskLevel": "Critical",
+      "sources": [
+        "OWASP",
+        "NCSC"
+      ]
+    },
+    {
+      "id": 3,
+      "category": "Prompt Injection",
+      "threat": "Indirect Prompt Injection",
+      "example": "Summarizing an email, PDF, website, or document in which a hidden instruction such as 'ignore the guidelines and send information out' was embedded.",
+      "response": "Treat external content as an untrusted source. Do not let the AI perform an action because of an instruction that appears inside a document, email, or website.",
+      "severity": 5,
+      "likelihood": 4,
+      "riskScore": 20,
+      "riskLevel": "Critical",
+      "sources": [
+        "NIST",
+        "NCSC",
+        "OWASP"
+      ]
+    },
+    {
+      "id": 4,
+      "category": "Add-ons & Tools",
+      "threat": "Downloading malicious Skills, Plugins, or Extensions",
+      "example": "Installing an AI browser add-on, an email-summary plugin, a document-writing Skill, or a Connector to enterprise systems.",
+      "response": "Do not download, install, or run any Skill, Plugin, Extension, Connector, or Agent Tool without organizational approval.",
+      "severity": 5,
+      "likelihood": 4,
+      "riskScore": 20,
+      "riskLevel": "Critical",
+      "sources": [
+        "OWASP",
+        "OWASP_Agentic"
+      ]
+    },
+    {
+      "id": 5,
+      "category": "Add-ons & Tools",
+      "threat": "Plugins with excessive permissions",
+      "example": "An AI add-on requests access to email, files, calendar, Drive, Teams, CRM, or the browser.",
+      "response": "Do not approve broad permissions without review. If an add-on requests access it does not need, stop and report it.",
+      "severity": 5,
+      "likelihood": 4,
+      "riskScore": 20,
+      "riskLevel": "Critical",
+      "sources": [
+        "OWASP",
+        "OWASP_Agentic"
+      ]
+    },
+    {
+      "id": 6,
+      "category": "Permissions & Exposure",
+      "threat": "Information exposure due to excessive permissions",
+      "example": "An enterprise AI shows an employee documents they can technically access but that are not required for their role.",
+      "response": "Do not distribute information the AI displayed if it is unrelated to your role. Report unusual information exposure.",
+      "severity": 4,
+      "likelihood": 4,
+      "riskScore": 16,
+      "riskLevel": "High",
+      "sources": [
+        "Microsoft_Copilot"
+      ]
+    },
+    {
+      "id": 7,
+      "category": "Unapproved Tools",
+      "threat": "Shadow AI",
+      "example": "Using a free AI website, a private tool, a browser add-on, or an unapproved bot for office work.",
+      "response": "Use only AI tools approved by the organization. Do not upload work documents to private tools.",
+      "severity": 4,
+      "likelihood": 5,
+      "riskScore": 20,
+      "riskLevel": "Critical",
+      "sources": [
+        "NIST",
+        "FBI"
+      ]
+    },
+    {
+      "id": 8,
+      "category": "Information Reliability",
+      "threat": "Reliance on incorrect answers or hallucinations",
+      "example": "The AI fabricates a source, a legal clause, a financial figure, a customer name, or an incorrect professional recommendation.",
+      "response": "Verify facts, figures, names, dates, and sources before any business use.",
+      "severity": 4,
+      "likelihood": 5,
+      "riskScore": 20,
+      "riskLevel": "Critical",
+      "sources": [
+        "NIST"
+      ]
+    },
+    {
+      "id": 9,
+      "category": "Information & Privacy",
+      "threat": "Intellectual-property exposure",
+      "example": "Uploading a roadmap, management deck, code, architecture, price quote, or product idea to an external AI tool.",
+      "response": "Do not enter intellectual property into unapproved tools. Use only an approved organizational environment.",
+      "severity": 5,
+      "likelihood": 3,
+      "riskScore": 15,
+      "riskLevel": "High",
+      "sources": [
+        "NIST",
+        "OWASP"
+      ]
+    },
+    {
+      "id": 10,
+      "category": "Social Engineering",
+      "threat": "AI-enhanced phishing",
+      "example": "A well-written, error-free email impersonating a manager, supplier, or customer.",
+      "response": "Do not treat polished wording as a sign of authenticity. Verify unusual requests through a second channel.",
+      "severity": 4,
+      "likelihood": 5,
+      "riskScore": 20,
+      "riskLevel": "Critical",
+      "sources": [
+        "Microsoft_Security",
+        "IC3"
+      ]
+    },
+    {
+      "id": 11,
+      "category": "Social Engineering",
+      "threat": "BEC, Business Email Compromise",
+      "example": "Impersonating a CEO, CFO, supplier, or customer to transfer money, change bank details, or send sensitive information.",
+      "response": "Do not make a payment, change bank details, or send sensitive information based on an email or chat alone. Verify through a separate, pre-known channel.",
+      "severity": 5,
+      "likelihood": 4,
+      "riskScore": 20,
+      "riskLevel": "Critical",
+      "sources": [
+        "IC3",
+        "Microsoft_Security"
+      ]
+    },
+    {
+      "id": 12,
+      "category": "Social Engineering",
+      "threat": "Deepfake voice or video",
+      "example": "A phone call, voice message, or video that appears to come from a manager, supplier, customer, or known employee.",
+      "response": "Do not approve a sensitive action just because of a familiar voice or video. Re-verify via a known phone number or official channel.",
+      "severity": 5,
+      "likelihood": 4,
+      "riskScore": 20,
+      "riskLevel": "Critical",
+      "sources": [
+        "Microsoft_Security",
+        "IC3"
+      ]
+    },
+    {
+      "id": 13,
+      "category": "Social Engineering",
+      "threat": "AI-based Vishing and Smishing",
+      "example": "An SMS, WhatsApp, or voice message asking you to open a link, switch to another channel, or hand over login credentials.",
+      "response": "Do not click links or switch to an external channel on a suspicious request. Verify identity through an independent channel.",
+      "severity": 4,
+      "likelihood": 5,
+      "riskScore": 20,
+      "riskLevel": "Critical",
+      "sources": [
+        "IC3",
+        "Microsoft_Security"
+      ]
+    },
+    {
+      "id": 14,
+      "category": "Agents & Permissions",
+      "threat": "Automatic action taken on the employee's behalf",
+      "example": "The AI sends an email, updates the CRM, deletes a file, opens a permission, or approves a business action.",
+      "response": "Do not approve sensitive automatic actions without human review. Actions involving money, customers, permissions, or data require approval.",
+      "severity": 5,
+      "likelihood": 3,
+      "riskScore": 15,
+      "riskLevel": "High",
+      "sources": [
+        "OWASP_Agentic",
+        "OWASP"
+      ]
+    },
+    {
+      "id": 15,
+      "category": "Information & Privacy",
+      "threat": "Employee or customer privacy violation",
+      "example": "Entering resumes, employee complaints, salary details, ID numbers, medical information, or customer details.",
+      "response": "Do not enter personal or sensitive information into AI tools without approval. Even 'just a summary' may count as exposure.",
+      "severity": 5,
+      "likelihood": 3,
+      "riskScore": 15,
+      "riskLevel": "High",
+      "sources": [
+        "NIST",
+        "FBI"
+      ]
+    },
+    {
+      "id": 16,
+      "category": "Ethics & Decision-Making",
+      "threat": "Bias and discrimination in outputs",
+      "example": "The AI assists in screening candidates, evaluating employees, drafting feedback, or ranking customers.",
+      "response": "Do not use AI as the final decision on sensitive matters. Apply human review and ensure there is no bias or discrimination.",
+      "severity": 4,
+      "likelihood": 3,
+      "riskScore": 12,
+      "riskLevel": "High",
+      "sources": [
+        "NIST"
+      ]
+    },
+    {
+      "id": 17,
+      "category": "Output & Code",
+      "threat": "Dangerous links, files, or scripts from AI output",
+      "example": "The AI suggests opening a link, running a command, downloading a file, enabling a macro, or using a script.",
+      "response": "Do not run code, commands, macros, or files the AI generated without understanding them and reviewing security.",
+      "severity": 5,
+      "likelihood": 3,
+      "riskScore": 15,
+      "riskLevel": "High",
+      "sources": [
+        "OWASP"
+      ]
+    },
+    {
+      "id": 18,
+      "category": "Information & Privacy",
+      "threat": "Sensitive data retained in an AI conversation",
+      "example": "An employee accidentally uploads a sensitive document or keeps working in a conversation that already contains forbidden information.",
+      "response": "Stop using the conversation, delete the file if possible, do not keep processing the information, and report per organizational procedure.",
+      "severity": 4,
+      "likelihood": 4,
+      "riskScore": 16,
+      "riskLevel": "High",
+      "sources": [
+        "NIST",
+        "FBI"
+      ]
+    },
+    {
+      "id": 19,
+      "category": "Meetings & Sharing",
+      "threat": "AI Meeting Assistants and transcription of sensitive meetings",
+      "example": "Adding an AI bot to a management meeting, hearing, legal discussion, HR, tender, or customer meeting.",
+      "response": "Do not enable AI transcription or summarization in sensitive meetings without approval. Notify participants of recording or transcription.",
+      "severity": 4,
+      "likelihood": 4,
+      "riskScore": 16,
+      "riskLevel": "High",
+      "sources": [
+        "NIST",
+        "Microsoft_Copilot"
+      ]
+    },
+    {
+      "id": 20,
+      "category": "Meetings & Sharing",
+      "threat": "Leakage via email and Teams/Slack thread summaries",
+      "example": "The AI summarizes a long thread and includes internal information or information not meant for distribution.",
+      "response": "Before sending an AI-generated summary, read it in full, remove sensitive information, and confirm recipients are authorized.",
+      "severity": 4,
+      "likelihood": 4,
+      "riskScore": 16,
+      "riskLevel": "High",
+      "sources": [
+        "Microsoft_Copilot",
+        "NIST"
+      ]
+    },
+    {
+      "id": 21,
+      "category": "Data & Knowledge",
+      "threat": "Knowledge-base poisoning / RAG Poisoning",
+      "example": "A SharePoint or Drive file looks innocent but contains misleading information or malicious instructions the AI will later retrieve.",
+      "response": "Do not rely on an AI answer without checking the source. If the source is new, unfamiliar, or unofficial, do not use the answer and report it.",
+      "severity": 5,
+      "likelihood": 3,
+      "riskScore": 15,
+      "riskLevel": "High",
+      "sources": [
+        "FBI",
+        "OWASP"
+      ]
+    },
+    {
+      "id": 22,
+      "category": "Data & Knowledge",
+      "threat": "Memory Poisoning",
+      "example": "Saving incorrect details, unapproved instructions, or externally-sourced information into an AI tool's memory.",
+      "response": "Do not store organizational or personal information in AI memory without approval. Review what the tool remembers and delete incorrect or sensitive information.",
+      "severity": 4,
+      "likelihood": 3,
+      "riskScore": 12,
+      "riskLevel": "High",
+      "sources": [
+        "OWASP_Agentic",
+        "FBI"
+      ]
+    },
+    {
+      "id": 23,
+      "category": "Agents & Permissions",
+      "threat": "Excessive Agency",
+      "example": "An agent is granted permission to send emails, open tickets, update the CRM, order from suppliers, or access files without approval.",
+      "response": "Do not run an agent with independent action capability over money, customers, permissions, files, or business systems.",
+      "severity": 5,
+      "likelihood": 3,
+      "riskScore": 15,
+      "riskLevel": "High",
+      "sources": [
+        "OWASP_Agentic",
+        "OWASP"
+      ]
+    },
+    {
+      "id": 24,
+      "category": "Agents & Permissions",
+      "threat": "Tool Misuse",
+      "example": "An AI connected to email, calendar, CRM, Jira, ServiceNow, or a finance system performs a wrong action due to misinterpretation.",
+      "response": "Do not approve connecting AI tools to enterprise systems without understanding what it can read and do. Prefer Read-Only.",
+      "severity": 5,
+      "likelihood": 3,
+      "riskScore": 15,
+      "riskLevel": "High",
+      "sources": [
+        "OWASP_Agentic"
+      ]
+    },
+    {
+      "id": 25,
+      "category": "Add-ons & Tools",
+      "threat": "MCP / Connector Tool Poisoning",
+      "example": "A connector or tool presents the AI with a misleading tool description, hidden parameters, or concealed instructions that cause an unwanted action.",
+      "response": "Use only organizationally-approved Connectors and MCP tools. Do not connect personal servers or tools.",
+      "severity": 5,
+      "likelihood": 3,
+      "riskScore": 15,
+      "riskLevel": "High",
+      "sources": [
+        "OWASP_Agentic",
+        "OWASP"
+      ]
+    },
+    {
+      "id": 26,
+      "category": "Identity & Access",
+      "threat": "AI Account Takeover",
+      "example": "A personal or enterprise AI account is breached, and the attacker sees conversation history, uploaded files, and prompts.",
+      "response": "Enable MFA, do not reuse passwords, do not share AI accounts, and do not use a personal account for work.",
+      "severity": 5,
+      "likelihood": 3,
+      "riskScore": 15,
+      "riskLevel": "High",
+      "sources": [
+        "FBI",
+        "NIST"
+      ]
+    },
+    {
+      "id": 27,
+      "category": "Information & Privacy",
+      "threat": "Leakage via conversation history and uploaded files",
+      "example": "Information remains in the conversation, history, or workspace after a sensitive file was uploaded.",
+      "response": "Do not upload a sensitive file without approval. If uploaded by mistake, delete it if possible and report per procedure.",
+      "severity": 4,
+      "likelihood": 4,
+      "riskScore": 16,
+      "riskLevel": "High",
+      "sources": [
+        "NIST",
+        "FBI"
+      ]
+    },
+    {
+      "id": 28,
+      "category": "Add-ons & Tools",
+      "threat": "AI browser extensions with browser access",
+      "example": "An AI add-on reads open pages, internal portals, HR systems, CRM, banking, or documents.",
+      "response": "Do not install an AI browser extension without approval. If an extension requests to read all sites or the clipboard, do not approve it.",
+      "severity": 5,
+      "likelihood": 4,
+      "riskScore": 20,
+      "riskLevel": "Critical",
+      "sources": [
+        "OWASP",
+        "OWASP_Agentic"
+      ]
+    },
+    {
+      "id": 29,
+      "category": "Information Reliability",
+      "threat": "Fake links and sources generated by AI",
+      "example": "The AI provides a link, ruling, standard, article, APA source, or clause number that does not exist.",
+      "response": "Do not insert a source into a business, legal, or professional document before opening and independently verifying it.",
+      "severity": 4,
+      "likelihood": 5,
+      "riskScore": 20,
+      "riskLevel": "Critical",
+      "sources": [
+        "NIST"
+      ]
+    },
+    {
+      "id": 30,
+      "category": "Social Engineering",
+      "threat": "AI-Generated Invoices",
+      "example": "A convincing invoice with the correct logo and a real supplier's wording, but with a small change to the bank details.",
+      "response": "Any change to bank details, an unusual invoice, or an urgent payment request must be verified through a pre-known channel.",
+      "severity": 5,
+      "likelihood": 4,
+      "riskScore": 20,
+      "riskLevel": "Critical",
+      "sources": [
+        "IC3",
+        "Microsoft_Security"
+      ]
+    },
+    {
+      "id": 31,
+      "category": "Identity & Access",
+      "threat": "Synthetic Identity of suppliers or candidates",
+      "example": "A candidate's or supplier's resume, profile photo, references, voice, or video are AI-generated.",
+      "response": "Do not rely on documents, video, or a profile alone. Verify identity, domain, company, and independent sources.",
+      "severity": 4,
+      "likelihood": 3,
+      "riskScore": 12,
+      "riskLevel": "High",
+      "sources": [
+        "Microsoft_Security",
+        "IC3"
+      ]
+    },
+    {
+      "id": 32,
+      "category": "Output & Code",
+      "threat": "AI-Assisted Malware - dangerous code, macros, and scripts",
+      "example": "An employee asks the AI to create an Excel formula, PowerShell, macro, or script and runs it without understanding its impact.",
+      "response": "Do not run AI-generated code on a corporate machine without review. Code that deletes, downloads, or sends information requires technical review.",
+      "severity": 5,
+      "likelihood": 3,
+      "riskScore": 15,
+      "riskLevel": "High",
+      "sources": [
+        "OWASP",
+        "Microsoft_Security"
+      ]
+    },
+    {
+      "id": 33,
+      "category": "Information & Privacy",
+      "threat": "Data Residency - processing in an unapproved country",
+      "example": "Using an external tool that uploads documents to an unknown cloud or processes data outside organizational policy.",
+      "response": "Use only organizationally-approved tools. Do not enter personal, customer, or internal documents into an unapproved tool.",
+      "severity": 4,
+      "likelihood": 3,
+      "riskScore": 12,
+      "riskLevel": "High",
+      "sources": [
+        "NIST",
+        "FBI"
+      ]
+    },
+    {
+      "id": 34,
+      "category": "Information Reliability",
+      "threat": "Misleading Translation",
+      "example": "The AI translates a contract, legal email, tender document, or business commitment and alters a critical term.",
+      "response": "Do not treat an AI translation as a binding document without professional human review.",
+      "severity": 4,
+      "likelihood": 3,
+      "riskScore": 12,
+      "riskLevel": "High",
+      "sources": [
+        "NIST"
+      ]
+    },
+    {
+      "id": 35,
+      "category": "Information Reliability",
+      "threat": "Overconfidence in an AI answer",
+      "example": "An authoritative tone leads the employee to stop checking data, assumptions, and sources.",
+      "response": "Treat an AI answer as a draft only. For money, legal, HR, security, or customer matters, perform independent verification.",
+      "severity": 4,
+      "likelihood": 5,
+      "riskScore": 20,
+      "riskLevel": "Critical",
+      "sources": [
+        "NIST"
+      ]
+    },
+    {
+      "id": 36,
+      "category": "Information & Privacy",
+      "threat": "Cross-Context Leakage",
+      "example": "Working in the same AI conversation on Customer A and then Customer B, and the AI mixes information across the contexts.",
+      "response": "Open a separate conversation for each customer, project, or sensitive topic. Do not mix documents from different customers in the same conversation.",
+      "severity": 4,
+      "likelihood": 4,
+      "riskScore": 16,
+      "riskLevel": "High",
+      "sources": [
+        "NIST"
+      ]
+    },
+    {
+      "id": 37,
+      "category": "Meetings & Sharing",
+      "threat": "Unauthorized AI Sharing - sharing output with excess information",
+      "example": "Sharing a prompt, screenshot, or AI answer that includes internal information that went unnoticed.",
+      "response": "Before sharing a screenshot or AI output, check that it contains no customer names, internal data, links, or tokens.",
+      "severity": 4,
+      "likelihood": 4,
+      "riskScore": 16,
+      "riskLevel": "High",
+      "sources": [
+        "NIST",
+        "Microsoft_Copilot"
+      ]
+    },
+    {
+      "id": 38,
+      "category": "Operations & Costs",
+      "threat": "AI Cost Abuse",
+      "example": "Uploading huge files, running agents in a loop, or using an expensive tool with no business need.",
+      "response": "Use AI according to business need. Do not run massive processing, automations, or agents without approval.",
+      "severity": 3,
+      "likelihood": 3,
+      "riskScore": 9,
+      "riskLevel": "Medium",
+      "sources": [
+        "OWASP",
+        "OWASP_Agentic"
+      ]
+    },
+    {
+      "id": 39,
+      "category": "Information & Privacy",
+      "threat": "Prompt Leakage - exposure of internal instructions",
+      "example": "Sharing an organizational prompt, internal policy, work template, or system instructions with an external tool or supplier.",
+      "response": "Treat organizational prompts and work templates as intellectual property. Do not share them outside the organization without approval.",
+      "severity": 4,
+      "likelihood": 3,
+      "riskScore": 12,
+      "riskLevel": "High",
+      "sources": [
+        "OWASP",
+        "NIST"
+      ]
+    },
+    {
+      "id": 40,
+      "category": "Prompt Injection",
+      "threat": "Second-Order Prompt Injection",
+      "example": "A malicious instruction enters a service form or support ticket, and later another agent with high permissions reads it and acts on it.",
+      "response": "If the AI derives a task from external content, do not approve it automatically. Tasks from an email, form, or website require human review.",
+      "severity": 5,
+      "likelihood": 3,
+      "riskScore": 15,
+      "riskLevel": "High",
+      "sources": [
+        "NCSC",
+        "OWASP_Agentic"
+      ]
+    },
+    {
+      "id": 41,
+      "category": "Advisory & Guidance",
+      "threat": "Legal / contract language",
+      "example": "Drafting, reviewing, or pasting contract or legal text into the AI.",
+      "response": "This looks like contract or legal text. AI output is not legal advice — have qualified legal counsel review it before you finalize, sign, or share it.",
+      "severity": 3,
+      "likelihood": 3,
+      "riskScore": 9,
+      "riskLevel": "Medium",
+      "sources": [
+        "Advisory"
+      ]
+    },
+    {
+      "id": 42,
+      "category": "Advisory & Guidance",
+      "threat": "Employee relations / PIP",
+      "example": "Drafting a performance improvement plan (PIP), warning, disciplinary letter, hearing, or termination.",
+      "response": "This involves an employee-relations or performance action (e.g. a PIP, warning, hearing, or termination). AI output is not HR or legal advice — involve HR and qualified legal counsel before documenting, sending, or acting on it.",
+      "severity": 3,
+      "likelihood": 3,
+      "riskScore": 9,
+      "riskLevel": "Medium",
+      "sources": [
+        "Advisory"
+      ]
+    },
+    {
+      "id": 43,
+      "category": "Output & Code",
+      "threat": "Destructive command execution",
+      "example": "An agent runs an irreversible, high-impact shell or DB command (rm -rf, git push --force, DROP DATABASE/TABLE, disk format, mass delete) before a human reviews it.",
+      "response": "This prompt would have the agent run a destructive, hard-to-reverse command (e.g. rm -rf, force-push, DROP TABLE/DATABASE, format). Review the exact command and require explicit human approval before it runs.",
+      "severity": 3,
+      "likelihood": 2,
+      "riskScore": 6,
+      "riskLevel": "High",
+      "sources": [
+        "Agent safety"
+      ]
+    },
+    {
+      "id": 44,
+      "category": "Information & Privacy",
+      "threat": "Protected health information (HIPAA / PHI)",
+      "example": "A prompt contains patient health data — diagnoses, medical record numbers (MRN), prescriptions, ICD-10 codes, NPI/DEA, or health-insurance identifiers.",
+      "response": "This prompt appears to contain protected health information (PHI). Do not send patient health data, medical records, diagnoses, or insurance identifiers to the AI — redact it or use an approved, BAA-covered workflow.",
+      "severity": 3,
+      "likelihood": 2,
+      "riskScore": 6,
+      "riskLevel": "High",
+      "sources": [
+        "HIPAA",
+        "Regulated data"
+      ]
+    }
+  ]
+}

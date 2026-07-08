@@ -1,0 +1,25 @@
+node_modules/
+.tauridist/
+src-tauri/target/
+data.db
+*.db
+.DS_Store
+dist/
+
+# secrets
+.appcrane-key.local
+dist/
+.tauri-signing-key.local
+.apple-signing.local
+src-tauri/AuthKey_*.p8
+
+# open-source hardening
+.env
+.env.*
+*.local
+.claude/
+scratchpad/
+*.dmg
+*.app.tar.gz
+*.app.tar.gz.sig
+data/*.db

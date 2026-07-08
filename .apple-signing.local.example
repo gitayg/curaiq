@@ -1,0 +1,12 @@
+# Apple Developer ID signing + notarization.
+# Copy this file to `.apple-signing.local` (gitignored) and fill in your values.
+# Once present, `npm run release` signs with your Developer ID and notarizes automatically —
+# the DMG then opens with zero Gatekeeper warning. Until then, builds are adhoc.
+
+# From: security find-identity -v -p codesigning   (the full string in quotes)
+APPLE_SIGNING_IDENTITY=Developer ID Application: Your Name (TEAMID1234)
+
+# App Store Connect API key (role: Developer) — for notarization.
+APPLE_API_KEY=ABCDE12345
+APPLE_API_ISSUER=00000000-0000-0000-0000-000000000000
+APPLE_API_KEY_PATH=src-tauri/AuthKey_ABCDE12345.p8

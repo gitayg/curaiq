@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RAISEME — Managed AI Host (demo)</title>
+  <link rel="stylesheet" href="src/vendor/xterm.css" />
+  <link rel="stylesheet" href="src/styles.css" />
+</head>
+<body>
+  <div id="update-bar" hidden></div>
+  <header class="statusbar">
+    <span class="brand">RAISEME</span>
+    <span class="sb-item" id="sb-server"><span class="dot"></span> connecting…</span>
+    <span class="sb-item" id="sb-posture">warn + override</span>
+    <span class="sb-item dim">claude · guarded</span>
+    <span class="sb-spacer"></span>
+    <button class="sb-btn" id="det-btn">Detections <span class="badge" id="det-count">0</span></button>
+    <button class="sb-icon" id="enroll-toggle" title="Settings & enrollment" aria-label="Settings">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </header>
+
+  <main>
+    <section class="panel" id="host-panel">
+
+      <div id="enroll" class="enroll">
+        <div class="enroll-row">
+          <span class="enroll-label">Enroll device — paste your installation token:</span>
+          <input id="enroll-token" placeholder="installation token" />
+          <button id="enroll-btn">Enroll</button>
+          <span id="enroll-status" class="enroll-status"></span>
+        </div>
+        <div class="enroll-help">
+          Get a token from your admin in the RAISEME portal → <b>Installs → Create installation</b>. Or provision from a terminal:
+          <span class="cmd-row"><code id="enroll-cmd"></code><button id="enroll-copy" class="ghost mini">Copy</button></span>
+        </div>
+        <hr class="enroll-hr" />
+        <div class="enroll-row">
+          <span class="enroll-label">Agent auth:</span>
+          <select id="auth-method">
+            <option value="oauth">OAuth — Claude subscription (via CLI)</option>
+            <option value="apikey">API key (pay-per-use)</option>
+          </select>
+          <input id="agent-token" type="password" placeholder="sk-ant-oat01-…" />
+          <button id="agent-key-btn">Save</button>
+          <span id="agent-key-status" class="enroll-status"></span>
+        </div>
+
+        <div class="enroll-help" id="help-oauth">
+          Use your Claude (Pro / Max) subscription — two ways:
+          <ol class="howto">
+            <li><b>Log in right in the terminal above</b> — type <code>/login</code> in the claude session and follow the browser prompt.</li>
+            <li>Or paste an OAuth token: run <span class="cmd-row"><code id="oauth-cmd">claude setup-token</code><button id="oauth-copy" class="ghost mini">Copy</button></span>, sign in, paste the <code>sk-ant-oat01-…</code> above and <b>Save</b>. RAISEME passes it to claude as <code>CLAUDE_CODE_OAUTH_TOKEN</code> — the way these tokens are meant to be used (not a raw API call, which is why that 401'd).</li>
+          </ol>
+        </div>
+
+        <div class="enroll-help" id="help-apikey" hidden>
+          Pay-per-use API key — works without the claude CLI:
+          <ol class="howto">
+            <li><button id="open-console" class="linkbtn">Open console.anthropic.com → API Keys</button> and sign in.</li>
+            <li>Click <b>Create Key</b>, copy the value (<code>sk-ant-…</code>), paste above, and <b>Save</b>.</li>
+          </ol>
+          Stored locally, billed to your Anthropic account.
+        </div>
+
+        <hr class="enroll-hr" />
+        <div id="device-info" class="device-info"></div>
+      </div>
+
+      <div id="term-bar" style="display:none"><span class="tb-label">Agent</span><select id="tool-picker"></select></div>
+      <div id="term"></div>
+      <div id="review-area"></div>
+      <div class="composer">
+        <textarea id="msg" rows="2" placeholder="Message the agent…  (Enter = guarded send · Shift+Enter for newline)"></textarea>
+        <div class="composer-actions">
+          <input id="file" type="file" multiple />
+          <button id="send">Guarded send</button>
+        </div>
+      </div>
+      <p class="dz-hint">Live <b>agent</b> session above: <b>arrow keys, Tab, Enter, Esc, Ctrl-C and the ← agents/fan-out key work directly</b> in the terminal. Typed <b>text</b> is redirected to the guarded composer below (reviewed <b>before</b> it reaches the agent), so prompts can't bypass the review. Drag &amp; drop or paste files to scan them, then <b>Insert into prompt</b>.</p>
+    </section>
+  </main>
+
+  <footer class="botbar">
+    <span class="bb-item"><span class="bb-k">Tenant</span> <span class="bb-v" id="bb-tenant">—</span></span>
+    <span class="bb-sep"></span>
+    <span class="bb-item"><span class="bb-k">Policy</span> <span class="bb-v" id="bb-policy">—</span></span>
+    <span class="bb-sep"></span>
+    <span class="bb-item bb-click" id="about-btn" title="About RAISEME"><span class="bb-k">Version</span> <span class="bb-v" id="bb-version">—</span> <span class="bb-i"><svg class="ic" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span></span>
+  </footer>
+
+  <div id="about-backdrop" hidden></div>
+  <div id="about-dialog" hidden>
+    <svg viewBox="0 0 64 64" width="44" height="44" aria-hidden="true">
+      <rect width="64" height="64" rx="14" fill="#0B0E14"/>
+      <path d="M14,49 L32,33 L50,49" fill="none" stroke="#2F6FE0" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M14,38 L32,22 L50,38" fill="none" stroke="#4C8DFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M17,27 L32,14 L47,27" fill="none" stroke="#9FC2FF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div class="about-name">RAISEME</div>
+    <div class="about-tag">Managed AI Security</div>
+    <dl class="about-rows" id="about-rows"></dl>
+    <button id="about-close" class="about-close">Close</button>
+  </div>
+
+  <div id="det-backdrop" hidden></div>
+  <aside id="det-drawer" class="drawer" hidden>
+    <div class="drawer-head">
+      <span class="drawer-title">Detection</span>
+      <span class="sb-spacer"></span>
+      <button id="clear-log" class="ghost mini">Clear</button>
+      <button id="det-close" class="ghost mini">✕</button>
+    </div>
+    <div class="drawer-body">
+      <table class="dtable">
+        <thead><tr><th>Time</th><th>Action</th><th>Detection</th><th>Risk</th><th>Stage</th></tr></thead>
+        <tbody id="log"></tbody>
+      </table>
+    </div>
+  </aside>
+
+  <script src="src/vendor/xterm.js"></script>
+  <script src="src/vendor/addon-fit.js"></script>
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>
