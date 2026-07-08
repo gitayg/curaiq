@@ -380,6 +380,28 @@ function renderFindings(text, stage, mount) {
   return blocked;
 }
 
+// Blocking findings in `text` (content rules + threats) as {match,label} — pure, no UI/audit.
+// Used to decide whether a blocked prompt can be salvaged by redaction.
+function blocksIn(text) {
+  const out = [];
+  const cp = policy?.contentPolicy || {};
+  const enabled = Object.keys(cp).filter((id) => cp[id] && cp[id] !== "disabled");
+  for (const c of engine.scanContent(text, enabled)) if ((cp[c.ruleId] || "disabled") === "block") out.push({ match: c.match, label: c.label });
+  for (const f of engine.scan(text, "prompt")) if (threatAction(f.threat.id) === "block") out.push({ match: f.match, label: f.threat.category });
+  return out;
+}
+
+// Replace each flagged span with a placeholder (literal match, all occurrences). Longest matches
+// first, so a shorter match nested inside a longer one (e.g. digits inside a full key) doesn't
+// corrupt the longer span before it can be stripped.
+function redactText(text, blocks) {
+  let out = text;
+  for (const b of [...blocks].filter((b) => b.match).sort((a, z) => z.match.length - a.match.length)) {
+    out = out.split(b.match).join("[REDACTED]");
+  }
+  return out;
+}
+
 // ----- composer: guarded send into the terminal -----
 function banner(mount, text, cls) {
   const b = document.createElement("div");
@@ -400,7 +422,33 @@ function sendMessage() {
   const fb = renderFindings(text, "prompt", review);
   renderLog();
 
-  if (cb || fb) { reportPrompt("blocked", lastFound); banner(review, "✗ Blocked by policy — not sent to the agent.", "block"); return; }
+  if (cb || fb) {
+    reportPrompt("blocked", lastFound);
+    banner(review, "✗ Blocked by policy — not sent to the agent.", "block");
+    // Redact & send when possible: if stripping every flagged span clears policy, offer it so the
+    // user can still send the safe remainder instead of being fully stuck.
+    const blocks = blocksIn(text);
+    if (blocks.length && blocks.every((b) => b.match)) {
+      const redacted = redactText(text, blocks);
+      if (redacted !== text && blocksIn(redacted).length === 0) {
+        const note = document.createElement("div");
+        note.className = "dz-hint";
+        note.style.marginTop = "8px";
+        note.textContent = "The flagged content can be removed. “Send redacted” replaces it with [REDACTED] and passes policy:";
+        const prev = document.createElement("div");
+        prev.style.cssText = "font-family:var(--mono);font-size:12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;margin-top:6px;white-space:pre-wrap;word-break:break-word;color:var(--text)";
+        prev.textContent = redacted.length > 240 ? redacted.slice(0, 240) + "…" : redacted;
+        const bar = document.createElement("div");
+        bar.className = "actions";
+        bar.append(
+          button("Send redacted", "danger", () => { report(audit.record({ action: "redacted", stage: "shared", tool: TOOL })); deliver(redacted); }),
+          button("Cancel", "ghost", () => { review.innerHTML = ""; })
+        );
+        review.append(note, prev, bar);
+      }
+    }
+    return;
+  }
 
   if (review.children.length) {
     const bar = document.createElement("div");

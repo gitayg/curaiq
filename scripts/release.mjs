@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// One-step release: [bump] → build app+DMG → upload DMG to AppCrane /data → push code → deploy → verify.
+// Agent release: [bump] → build app+DMG → sign + notarize → upload DMG + updater to AppCrane /data
+// → verify the installer is served. The management server deploys separately (see the server repo).
 //
 //   npm run release            # release the current version
 //   npm run release patch      # 0.8.16 → 0.8.17, then release
@@ -57,8 +58,9 @@ async function mcp(name, args) {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ---- version ----
-const VFILE = join(ROOT, "server/version.js");
-const cur = readFileSync(VFILE, "utf8").match(/VERSION = "([^"]+)"/)[1];
+// The agent's version source of truth is package.json (the management server versions separately).
+const PKG = join(ROOT, "package.json");
+const cur = JSON.parse(readFileSync(PKG, "utf8")).version;
 const arg = process.argv[2];
 function next(kind) {
   if (!kind) return cur;
@@ -71,10 +73,7 @@ function next(kind) {
 const V = next(arg);
 if (V !== cur) {
   log(`Bumping ${cur} → ${V}`);
-  writeFileSync(VFILE, readFileSync(VFILE, "utf8").replace(/VERSION = "[^"]+"/, `VERSION = "${V}"`));
-  for (const f of ["package.json", "deployhub.json"]) {
-    const p = join(ROOT, f); const j = JSON.parse(readFileSync(p, "utf8")); j.version = V; writeFileSync(p, JSON.stringify(j, null, 2) + "\n");
-  }
+  const j = JSON.parse(readFileSync(PKG, "utf8")); j.version = V; writeFileSync(PKG, JSON.stringify(j, null, 2) + "\n");
   const tc = join(ROOT, "src-tauri/tauri.conf.json"); writeFileSync(tc, readFileSync(tc, "utf8").replace(/"version": "[^"]+"/, `"version": "${V}"`));
   const cg = join(ROOT, "src-tauri/Cargo.toml"); writeFileSync(cg, readFileSync(cg, "utf8").replace(/^version = "[^"]+"/m, `version = "${V}"`));
 }
@@ -119,30 +118,12 @@ if (tgzName && sigName) {
   console.log("  ⚠ no updater artifact — check the 'updater' bundle target + TAURI_SIGNING_PRIVATE_KEY");
 }
 
-// ---- 3. push code + deploy ----
-log("Pushing server code + deploying");
-const files = [];
-for (const dir of ["server", "data", "server/jobs"]) {
-  if (!existsSync(join(ROOT, dir))) continue;
-  for (const f of readdirSync(join(ROOT, dir))) if (/\.(js|mjs|json)$/.test(f)) files.push({ path: `${dir}/${f}`, content: readFileSync(join(ROOT, dir, f), "utf8") });
-}
-for (const f of ["package.json", "deployhub.json", "Dockerfile", "crane.yaml"]) if (existsSync(join(ROOT, f))) files.push({ path: f, content: readFileSync(join(ROOT, f), "utf8") });
-const pushed = await mcp("appcrane_push_to_managed_app", { slug: SLUG, files, message: `release v${V}` });
-console.log(`  commit ${pushed.commit?.sha?.slice(0, 8)} (${files.length} files)`);
-const dep = await mcp("appcrane_deploy", { slug: SLUG, env: "production" });
-console.log(`  deploy ${dep.deployment_id} ${dep.status}`);
-
-// ---- 4. verify ----
-log("Verifying production");
-let healthy = false;
-for (let i = 0; i < 75 && !healthy; i++) {
-  try { healthy = (await (await fetch(`${BASE}/api/health`)).json()).version === V; } catch {}
-  if (!healthy) await sleep(4000);
-}
-console.log(`  health v${V}: ${healthy ? "✓" : "✗ timed out"}`);
+// ---- 3. verify the published installer ----
+// The management server (separate repo) serves the DMG we just uploaded to /data — confirm it's live.
+log("Verifying the published installer");
 const dl = await fetch(`${BASE}/download/app`);
 const dlsha = sha256(Buffer.from(await dl.arrayBuffer()));
 console.log(`  /download/app: HTTP ${dl.status} — ${dlsha === sha ? "✓ sha matches build" : "✗ sha mismatch"}`);
 
-if (healthy && dlsha === sha) console.log(`\n\x1b[32m✓ Released v${V} — live at ${BASE}\x1b[0m`);
+if (dl.ok && dlsha === sha) console.log(`\n\x1b[32m✓ Released agent v${V} — installer live at ${BASE}/download/app\x1b[0m`);
 else { console.log(`\n\x1b[31m✗ Release verification failed for v${V}\x1b[0m`); process.exit(1); }
