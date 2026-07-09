@@ -1,6 +1,6 @@
-# RAISEME
+# CuraIQ
 
-**On-device guardrails for AI coding agents.** RAISEME is a thin managed layer between your
+**On-device guardrails for AI coding agents.** CuraIQ is a thin managed layer between your
 people and the AI agents they run (Claude Code, Codex, GitHub Copilot CLI). Every prompt is
 reviewed **locally, before it reaches the agent** — coach, alert, or block by policy — and your
 security team gets **redacted, content-free** signals, never the actual conversations.
@@ -10,7 +10,7 @@ security team gets **redacted, content-free** signals, never the actual conversa
 
 > This repo is the **community agent** — it runs standalone with **local policy control**, no
 > account required. Centralized fleet management (multi-tenant console, SSO, compliance reporting)
-> is provided by a **separate, proprietary** RAISEME management server; register to use it.
+> is provided by a **separate, proprietary** CuraIQ management server; register to use it.
 
 ## How it works
 
@@ -70,7 +70,7 @@ under the project license.
 
 ## License
 
-RAISEME is licensed under the **GNU Affero General Public License v3.0** ([LICENSE](LICENSE)). The
-AGPL's network-use clause means that if you run a modified RAISEME server as a network service, you
-must make your modified source available to its users. Copyright © 2026 Itay Glick and RAISEME
+CuraIQ is licensed under the **GNU Affero General Public License v3.0** ([LICENSE](LICENSE)). The
+AGPL's network-use clause means that if you run a modified CuraIQ server as a network service, you
+must make your modified source available to its users. Copyright © 2026 Itay Glick and CuraIQ
 contributors.

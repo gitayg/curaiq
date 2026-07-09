@@ -1,18 +1,18 @@
-# RAISEME — Capability Spec
+# CuraIQ — Capability Spec
 
 **Version:** 0.6 · **Status:** architecture locked, refining capabilities · **UI language:** English (LTR)
 
 ## What it is
 
-RAISEME is a **native desktop "Managed AI Host"** for office workers, paired with a **central
-server** for policy and visibility. The employee does their AI work *inside* RAISEME — a native
+CuraIQ is a **native desktop "Managed AI Host"** for office workers, paired with a **central
+server** for policy and visibility. The employee does their AI work *inside* CuraIQ — a native
 app with an embedded, managed webview — so the host sees every prompt, response, paste, and
 upload natively (no browser extension, no DOM hacks). It detects the 40-threat matrix in real
 time, **coaches the employee** with the matrix's guidance, and **reports redacted alerts** to a
 central server so the security team has visibility.
 
 **Posture: voluntary and awareness-first — nothing is blocked.** Adoption is opt-in (self-install),
-the user is warned but can always override, and central is alerted but does not enforce. RAISEME's
+the user is warned but can always override, and central is alerted but does not enforce. CuraIQ's
 value is (a) **coaching** the employees who use it and (b) giving the security team **visibility**
 into AI-usage risk — *not* hard prevention. Because adoption is voluntary, it does not prevent
 Shadow AI by construction; it reduces risk for those who opt in and surfaces organization-wide
@@ -52,21 +52,21 @@ bytes but not in-app context, and **breaks the locked privacy posture** (*inspec
 redacted metadata leaves the device*). "See everything" reduces to either tapping every wire (the
 multi-surface suite under another name) or a MITM proxy that contradicts this posture.
 
-### Core principle — RAISEME is a pre-flight egress guard
-RAISEME sits **in front of** the agent and reviews what is about to be sent **before** it leaves
+### Core principle — CuraIQ is a pre-flight egress guard
+CuraIQ sits **in front of** the agent and reviews what is about to be sent **before** it leaves
 for `claude -p` (or any downstream LLM/agent). The review is therefore **local by necessity** —
 doing the review *via* a cloud call would itself be the egress we're trying to gate. Local review
 (Tier-1 regex → Tier-2 local model) decides allow / redact / abort; only the **approved** prompt
-egresses to the agent. This is what dissolves the privacy tension: RAISEME never sends raw content
+egresses to the agent. This is what dissolves the privacy tension: CuraIQ never sends raw content
 to the cloud for its own reasoning.
 
 ### Components
-- **RAISEME Client** — native desktop Managed AI Host (self-installed, voluntary). Hosts the
+- **CuraIQ Client** — native desktop Managed AI Host (self-installed, voluntary). Hosts the
   managed webview, runs the detection brain locally, coaches the user, reports alerts up.
-- **RAISEME Guard (CLI)** — `raiseme-guard` wraps `claude -p`: captures the prompt at the submit
+- **CuraIQ Guard (CLI)** — `raiseme-guard` wraps `claude -p`: captures the prompt at the submit
   boundary, runs the local review, and forwards only the approved/redacted prompt to the real
   `claude -p`. The runnable proof that the harness reviews egress before the agent. (`npm run guard`.)
-- **RAISEME Server** — web app on **crane.glick.run** (AppCrane). Distributes policy + rule-base
+- **CuraIQ Server** — web app on **crane.glick.run** (AppCrane). Distributes policy + rule-base
   to clients, ingests redacted alerts, and serves the security-team dashboard. Does **not** enforce.
 
 ### Client form factor — native Managed AI Host
@@ -87,7 +87,7 @@ Cheapest-and-most-private first; the escalation order *is* the privacy order.
 ### Telemetry — redacted alerts only
 Client → Server alerts carry **redacted metadata only**: threat id, category, risk tier, timestamp,
 tool used, optional content hash / redacted snippet. **Never raw sensitive content** — otherwise
-RAISEME would itself commit threats #1 / #9 / #33 on every phone-home.
+CuraIQ would itself commit threats #1 / #9 / #33 on every phone-home.
 
 ### Policy — server → client
 Server distributes: approved-tools allowlist, risk thresholds, Tier-3 egress policy, and rule-base

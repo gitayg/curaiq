@@ -40,7 +40,7 @@ export async function restartApp() {
 export async function aboutInfo() {
   const invoke = window.__TAURI__?.core?.invoke;
   if (invoke) { try { return await invoke("about_info"); } catch {} }
-  return { version: "", identifier: "run.glick.raiseme", platform: "web", arch: "", authority: "—", signed: false };
+  return { version: "", identifier: "run.glick.curaiq", platform: "web", arch: "", authority: "—", signed: false };
 }
 
 // Silently check the update server, and if a newer signed build exists, download + install it in
@@ -147,7 +147,7 @@ export function reportIdentity() {
   }).catch(() => {});
 }
 
-// Once the client runs, report the device's other AI tools + OS to the RAISEME server.
+// Once the client runs, report the device's other AI tools + OS to the CuraIQ server.
 export async function reportDevice() {
   const invoke = window.__TAURI__?.core?.invoke;
   if (!invoke) return null;

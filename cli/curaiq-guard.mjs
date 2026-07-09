@@ -65,7 +65,7 @@ function printContent(content, enforce) {
 }
 
 function printFindings(findings) {
-  console.error(`\n${C.bold}RAISEME pre-flight review${C.off} ${C.dim}— ${findings.length} issue(s) before sending to claude -p${C.off}\n`);
+  console.error(`\n${C.bold}CuraIQ pre-flight review${C.off} ${C.dim}— ${findings.length} issue(s) before sending to claude -p${C.off}\n`);
   for (const f of findings) {
     const c = color(f.threat.riskLevel);
     console.error(`  ${c}● ${f.mode === "coach" ? "COACH" : f.threat.riskLevel}${C.off}  #${f.threat.id} ${f.threat.threat}  ${C.dim}[${f.threat.category}]${C.off}`);
@@ -118,7 +118,7 @@ async function main() {
   const blockedContent = allContent.filter((c) => cp[c.ruleId] === "block");
 
   if (!findings.length && !content.length) {
-    console.error(`${C.green}✓ RAISEME: clean — forwarding to claude -p${C.off}\n`);
+    console.error(`${C.green}✓ CuraIQ: clean — forwarding to claude -p${C.off}\n`);
     process.exit(await runClaude(prompt));
   }
 

@@ -1,4 +1,4 @@
-# RAISEME — Backlog
+# CuraIQ — Backlog
 
 ## Profanity masking — a "mask" action (#53)
 
@@ -17,7 +17,7 @@ xterm renders it — which risks the TUI ghosting we just fixed. Higher-risk tha
 
 ## Cross-AI coverage — one on-device filter for every AI (the wedge)
 
-**Idea (#80 from the competitor sweep):** Build/position RAISEME as a single on-device guard that
+**Idea (#80 from the competitor sweep):** Build/position CuraIQ as a single on-device guard that
 reviews prompts *and* responses across **every** AI surface — ChatGPT, Claude, Gemini, Copilot,
 Character.AI, and any CLI/agent — not just the bundled `claude` terminal. No parental or DLP product
 today does cross-AI, on-device, prompt-level review; that gap is the core differentiation.
@@ -55,11 +55,11 @@ disabled/alert/block policy. Cloud (Tier-3) only if policy allows, on redacted s
 **Also (separate, smaller):** UI i18n — extract strings to locale files (en/he/…), language switch,
 RTL handling for Hebrew/Arabic.
 
-## SIEM export — per-account, from the RAISEME server
+## SIEM export — per-account, from the CuraIQ server
 
 **Status:** deferred (spec'd).
 
-The RAISEME **server** (not the client) forwards each tenant's redacted detection feed to that
+The CuraIQ **server** (not the client) forwards each tenant's redacted detection feed to that
 tenant's SIEM. Defined **per account** in the dashboard: each tenant configures its own destination
 (Splunk HEC / Microsoft Sentinel / generic JSON webhook URL + token). On each ingested alert, the
 server POSTs the redacted event to the tenant's configured endpoint. Borrowed from Cequence's
@@ -85,7 +85,7 @@ host-side wiring** so a pasted/dropped image is actually inspected + delivered.
 1. **Host inspection flow.** On image paste/drop, if `imageInspection.enabled`, the host should
    base64 the image → `POST /api/ocr` → run the existing detection engine on the returned text →
    apply the policy (disabled/alert/notify/block) just like text.
-2. **Delivery.** The terminal can't ingest an image through RAISEME. On a clean image: write it to a
+2. **Delivery.** The terminal can't ingest an image through CuraIQ. On a clean image: write it to a
    temp file and feed `claude` the path (claude reads image files), or wire native image-paste.
 
 **To do when picked up:**

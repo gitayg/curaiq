@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RAISEME — Managed AI Host (demo)</title>
+  <title>CuraIQ — Managed AI Host (demo)</title>
   <link rel="stylesheet" href="src/vendor/xterm.css" />
   <link rel="stylesheet" href="src/styles.css" />
 </head>
 <body>
   <div id="update-bar" hidden></div>
   <header class="statusbar">
-    <span class="brand">RAISEME</span>
+    <span class="brand">CuraIQ</span>
     <span class="sb-item" id="sb-server"><span class="dot"></span> connecting…</span>
     <span class="sb-item" id="sb-posture">warn + override</span>
     <span class="sb-item dim">claude · guarded</span>
@@ -32,7 +32,7 @@
           <span id="enroll-status" class="enroll-status"></span>
         </div>
         <div class="enroll-help">
-          Get a token from your admin in the RAISEME portal → <b>Installs → Create installation</b>. Or provision from a terminal:
+          Get a token from your admin in the CuraIQ portal → <b>Installs → Create installation</b>. Or provision from a terminal:
           <span class="cmd-row"><code id="enroll-cmd"></code><button id="enroll-copy" class="ghost mini">Copy</button></span>
         </div>
         <hr class="enroll-hr" />
@@ -51,7 +51,7 @@
           Use your Claude (Pro / Max) subscription — two ways:
           <ol class="howto">
             <li><b>Log in right in the terminal above</b> — type <code>/login</code> in the claude session and follow the browser prompt.</li>
-            <li>Or paste an OAuth token: run <span class="cmd-row"><code id="oauth-cmd">claude setup-token</code><button id="oauth-copy" class="ghost mini">Copy</button></span>, sign in, paste the <code>sk-ant-oat01-…</code> above and <b>Save</b>. RAISEME passes it to claude as <code>CLAUDE_CODE_OAUTH_TOKEN</code> — the way these tokens are meant to be used (not a raw API call, which is why that 401'd).</li>
+            <li>Or paste an OAuth token: run <span class="cmd-row"><code id="oauth-cmd">claude setup-token</code><button id="oauth-copy" class="ghost mini">Copy</button></span>, sign in, paste the <code>sk-ant-oat01-…</code> above and <b>Save</b>. CuraIQ passes it to claude as <code>CLAUDE_CODE_OAUTH_TOKEN</code> — the way these tokens are meant to be used (not a raw API call, which is why that 401'd).</li>
           </ol>
         </div>
 
@@ -87,7 +87,7 @@
     <span class="bb-sep"></span>
     <span class="bb-item"><span class="bb-k">Policy</span> <span class="bb-v" id="bb-policy">—</span></span>
     <span class="bb-sep"></span>
-    <span class="bb-item bb-click" id="about-btn" title="About RAISEME"><span class="bb-k">Version</span> <span class="bb-v" id="bb-version">—</span> <span class="bb-i"><svg class="ic" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span></span>
+    <span class="bb-item bb-click" id="about-btn" title="About CuraIQ"><span class="bb-k">Version</span> <span class="bb-v" id="bb-version">—</span> <span class="bb-i"><svg class="ic" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span></span>
   </footer>
 
   <div id="about-backdrop" hidden></div>
@@ -98,7 +98,7 @@
       <path d="M14,38 L32,22 L50,38" fill="none" stroke="#4C8DFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
       <path d="M17,27 L32,14 L47,27" fill="none" stroke="#9FC2FF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
-    <div class="about-name">RAISEME</div>
+    <div class="about-name">CuraIQ</div>
     <div class="about-tag">Managed AI Security</div>
     <dl class="about-rows" id="about-rows"></dl>
     <button id="about-close" class="about-close">Close</button>

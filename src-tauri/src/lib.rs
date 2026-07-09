@@ -15,26 +15,26 @@ struct Term {
 
 #[tauri::command]
 fn term_open(app: tauri::AppHandle, state: tauri::State<Term>, cols: u16, rows: u16, tool: Option<String>) -> Result<(), String> {
-    // Which agent CLI to launch — constrained to the ones RAISEME supports.
+    // Which agent CLI to launch — constrained to the ones CuraIQ supports.
     let tool = match tool.as_deref() {
         Some("codex") => "codex",
         Some("copilot") => "copilot",
         _ => "claude",
     };
-    // #3 — host-side policy enforcement. The RAISEME app itself refuses to launch an agent the
+    // #3 — host-side policy enforcement. The CuraIQ app itself refuses to launch an agent the
     // admin hasn't allowed, so the picker's restriction is real at the launch boundary (not just
     // UI a devtools user could invoke around). Claude is the always-available baseline; codex/
     // copilot require an allow confirmed with the server. This can't stop a user running the CLI
-    // entirely outside RAISEME — that's inherent to their own machine — it's governance, not a sandbox.
+    // entirely outside CuraIQ — that's inherent to their own machine — it's governance, not a sandbox.
     if tool != "claude" && !tool_allowed(tool) {
-        let _ = app.emit("term-data", format!("\x1b[31m[RAISEME] {tool} is not permitted by your organization's policy.\x1b[0m\r\n"));
+        let _ = app.emit("term-data", format!("\x1b[31m[CuraIQ] {tool} is not permitted by your organization's policy.\x1b[0m\r\n"));
         return Err(format!("{tool} not permitted by policy"));
     }
     let pair = native_pty_system()
         .openpty(PtySize { rows, cols, pixel_width: 0, pixel_height: 0 })
         .map_err(|e| e.to_string())?;
 
-    let _ = app.emit("term-data", format!("\x1b[2m[RAISEME] launching {tool}…\x1b[0m\r\n"));
+    let _ = app.emit("term-data", format!("\x1b[2m[CuraIQ] launching {tool}…\x1b[0m\r\n"));
 
     let bin = find_tool(tool).ok_or(format!("{tool} CLI not found"))?;
     let mut cmd = CommandBuilder::new(bin);
@@ -129,23 +129,23 @@ fn app_version() -> &'static str {
 }
 
 // Resolve an agent CLI binary (GUI/minimal-PATH safe). Each tool has an env override
-// (RAISEME_CLAUDE / RAISEME_CODEX / RAISEME_COPILOT) plus the usual install locations.
+// (CuraIQ_CLAUDE / CuraIQ_CODEX / CuraIQ_COPILOT) plus the usual install locations.
 fn find_tool(tool: &str) -> Option<String> {
     let home = std::env::var("HOME").unwrap_or_default();
     let (env_key, candidates): (&str, Vec<String>) = match tool {
-        "codex" => ("RAISEME_CODEX", vec![
+        "codex" => ("CuraIQ_CODEX", vec![
             format!("{home}/.local/bin/codex"),
             format!("{home}/.codex/bin/codex"),
             "/opt/homebrew/bin/codex".into(),
             "/usr/local/bin/codex".into(),
         ]),
-        "copilot" => ("RAISEME_COPILOT", vec![
+        "copilot" => ("CuraIQ_COPILOT", vec![
             format!("{home}/.local/bin/copilot"),
             format!("{home}/.npm-global/bin/copilot"),
             "/opt/homebrew/bin/copilot".into(),
             "/usr/local/bin/copilot".into(),
         ]),
-        _ => ("RAISEME_CLAUDE", vec![
+        _ => ("CuraIQ_CLAUDE", vec![
             format!("{home}/.local/bin/claude"),
             format!("{home}/.claude/local/claude"),
             "/opt/homebrew/bin/claude".into(),
@@ -192,12 +192,12 @@ fn tool_allowed(tool: &str) -> bool {
     }
 }
 
-// Writes the provision config (serverUrl + tenant) to ~/.raiseme/config.json — used when the
+// Writes the provision config (serverUrl + tenant) to ~/.curaiq/config.json — used when the
 // user enrolls by pasting an installation token in the app.
 #[tauri::command]
 fn save_provision(config: serde_json::Value) -> Result<(), String> {
     let home = std::env::var("HOME").map_err(|e| e.to_string())?;
-    let dir = format!("{home}/.raiseme");
+    let dir = format!("{home}/.curaiq");
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     // Merge into the existing config so enrolling doesn't clobber agent auth / other keys.
     let mut cfg = read_config();
@@ -231,7 +231,7 @@ fn about_info() -> serde_json::Value {
     // signing identity name / Team ID in the UI — only a boolean status.
     let mut signed = false;
     if let Ok(exe) = std::env::current_exe() {
-        // exe = .../RAISEME.app/Contents/MacOS/raiseme → the .app bundle is 3 levels up.
+        // exe = .../CuraIQ.app/Contents/MacOS/curaiq → the .app bundle is 3 levels up.
         if let Some(bundle) = exe.ancestors().nth(3) {
             if let Ok(out) = std::process::Command::new("codesign").arg("-dvv").arg(bundle).output() {
                 for line in String::from_utf8_lossy(&out.stderr).lines() {
@@ -244,7 +244,7 @@ fn about_info() -> serde_json::Value {
     }
     serde_json::json!({
         "version": env!("CARGO_PKG_VERSION"),
-        "identifier": "run.glick.raiseme",
+        "identifier": "run.glick.curaiq",
         "platform": std::env::consts::OS,
         "arch": std::env::consts::ARCH,
         "signed": signed
@@ -267,14 +267,14 @@ async fn check_and_install_update(app: tauri::AppHandle) -> Result<bool, String>
     }
 }
 
-// Merge a boolean flag into ~/.raiseme/config.json without clobbering other keys.
+// Merge a boolean flag into ~/.curaiq/config.json without clobbering other keys.
 fn set_config_bool(key: &str, val: bool) {
     let mut cfg = read_config();
     if !cfg.is_object() { cfg = serde_json::json!({}); }
     if let Some(o) = cfg.as_object_mut() { o.insert(key.to_string(), serde_json::Value::Bool(val)); }
     if let Ok(home) = std::env::var("HOME") {
-        let _ = std::fs::create_dir_all(format!("{home}/.raiseme"));
-        let _ = std::fs::write(format!("{home}/.raiseme/config.json"), serde_json::to_string_pretty(&cfg).unwrap_or_default());
+        let _ = std::fs::create_dir_all(format!("{home}/.curaiq"));
+        let _ = std::fs::write(format!("{home}/.curaiq/config.json"), serde_json::to_string_pretty(&cfg).unwrap_or_default());
     }
 }
 
@@ -290,7 +290,7 @@ fn open_url(url: String) -> Result<(), String> {
     Ok(())
 }
 
-// Inventories other AI tools installed on the device + the OS, to report to the RAISEME server.
+// Inventories other AI tools installed on the device + the OS, to report to the CuraIQ server.
 #[tauri::command]
 fn device_ai_tools() -> serde_json::Value {
     let apps: [(&str, &str); 12] = [
@@ -469,7 +469,7 @@ fn os_patch_status() -> serde_json::Value {
 
 fn read_config() -> serde_json::Value {
     std::env::var("HOME").ok()
-        .and_then(|h| std::fs::read_to_string(format!("{h}/.raiseme/config.json")).ok())
+        .and_then(|h| std::fs::read_to_string(format!("{h}/.curaiq/config.json")).ok())
         .and_then(|c| serde_json::from_str(&c).ok())
         .unwrap_or_else(|| serde_json::json!({}))
 }
@@ -478,17 +478,17 @@ fn read_config() -> serde_json::Value {
 #[tauri::command]
 fn set_agent_auth(method: String, token: String) -> Result<(), String> {
     let home = std::env::var("HOME").map_err(|e| e.to_string())?;
-    std::fs::create_dir_all(format!("{home}/.raiseme")).map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(format!("{home}/.curaiq")).map_err(|e| e.to_string())?;
     let mut cfg = read_config();
     if !cfg.is_object() { cfg = serde_json::json!({}); }
     cfg["authMethod"] = serde_json::Value::String(method);
     cfg["agentToken"] = serde_json::Value::String(token);
-    std::fs::write(format!("{home}/.raiseme/config.json"), serde_json::to_string_pretty(&cfg).unwrap())
+    std::fs::write(format!("{home}/.curaiq/config.json"), serde_json::to_string_pretty(&cfg).unwrap())
         .map_err(|e| e.to_string())?;
     Ok(())
 }
 
-// Fallback agent path: the local claude CLI (uses its own OAuth login). RAISEME has already
+// Fallback agent path: the local claude CLI (uses its own OAuth login). CuraIQ has already
 // pre-flight reviewed the prompt on the JS side.
 #[tauri::command]
 fn run_agent(prompt: String) -> Result<String, String> {
@@ -529,5 +529,5 @@ pub fn run() {
         .manage(Term::default())
         .invoke_handler(tauri::generate_handler![native_log, app_version, identity, run_agent, save_provision, set_agent_auth, open_url, open_login_terminal, restart_app, check_and_install_update, about_info, term_open, term_input, term_resize, device_ai_tools, os_patch_status, device_browsers])
         .run(tauri::generate_context!())
-        .expect("error while running RAISEME");
+        .expect("error while running CuraIQ");
 }

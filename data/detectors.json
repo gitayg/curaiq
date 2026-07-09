@@ -1,6 +1,6 @@
 {
   "meta": {
-    "name": "RAISEME Tier-1 Detectors (seed)",
+    "name": "CuraIQ Tier-1 Detectors (seed)",
     "version": "0.1.0",
     "schema": "detector-v1",
     "description": "Seed deterministic detectors for the 'Detect' class threats. Patterns are illustrative starting points to be tuned with fixtures. threatId references data/threats.json. combine: weighted_sum|any|all. thresholds.fire => confirm at Tier-1; thresholds.escalate => send to Tier-2 local LLM; below escalate => suppress.",

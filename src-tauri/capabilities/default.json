@@ -1,6 +1,6 @@
 {
   "identifier": "default",
-  "description": "Core permissions for the RAISEME main window (IPC + events).",
+  "description": "Core permissions for the CuraIQ main window (IPC + events).",
   "windows": ["main"],
   "permissions": ["core:default", "updater:default"]
 }
