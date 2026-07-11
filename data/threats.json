@@ -55,7 +55,10 @@
       "sources": [
         "NIST",
         "OWASP"
-      ]
+      ],
+      "owasp": "LLM02",
+      "atlas": "AML.T0057",
+      "stride": "Information Disclosure"
     },
     {
       "id": 2,
@@ -70,7 +73,10 @@
       "sources": [
         "OWASP",
         "NCSC"
-      ]
+      ],
+      "owasp": "LLM01",
+      "atlas": "AML.T0051",
+      "stride": "Tampering"
     },
     {
       "id": 3,
@@ -86,7 +92,10 @@
         "NIST",
         "NCSC",
         "OWASP"
-      ]
+      ],
+      "owasp": "LLM01",
+      "atlas": "AML.T0051",
+      "stride": "Tampering"
     },
     {
       "id": 4,
@@ -101,7 +110,10 @@
       "sources": [
         "OWASP",
         "OWASP_Agentic"
-      ]
+      ],
+      "owasp": "LLM03",
+      "atlas": "AML.T0053",
+      "stride": "Elevation of Privilege"
     },
     {
       "id": 5,
@@ -116,7 +128,10 @@
       "sources": [
         "OWASP",
         "OWASP_Agentic"
-      ]
+      ],
+      "owasp": "LLM06",
+      "atlas": "AML.T0053",
+      "stride": "Elevation of Privilege"
     },
     {
       "id": 6,
@@ -130,7 +145,10 @@
       "riskLevel": "High",
       "sources": [
         "Microsoft_Copilot"
-      ]
+      ],
+      "owasp": "LLM06",
+      "atlas": "AML.T0053",
+      "stride": "Information Disclosure"
     },
     {
       "id": 7,
@@ -145,7 +163,10 @@
       "sources": [
         "NIST",
         "FBI"
-      ]
+      ],
+      "owasp": "LLM03",
+      "atlas": "AML.T0010",
+      "stride": "Information Disclosure"
     },
     {
       "id": 8,
@@ -159,7 +180,10 @@
       "riskLevel": "Critical",
       "sources": [
         "NIST"
-      ]
+      ],
+      "owasp": "LLM09",
+      "atlas": "AML.T0048",
+      "stride": "Repudiation"
     },
     {
       "id": 9,
@@ -174,7 +198,10 @@
       "sources": [
         "NIST",
         "OWASP"
-      ]
+      ],
+      "owasp": "LLM02",
+      "atlas": "AML.T0057",
+      "stride": "Information Disclosure"
     },
     {
       "id": 10,
@@ -189,7 +216,10 @@
       "sources": [
         "Microsoft_Security",
         "IC3"
-      ]
+      ],
+      "owasp": "LLM09",
+      "atlas": "AML.T0048",
+      "stride": "Spoofing"
     },
     {
       "id": 11,
@@ -204,7 +234,10 @@
       "sources": [
         "IC3",
         "Microsoft_Security"
-      ]
+      ],
+      "owasp": "LLM09",
+      "atlas": "AML.T0048",
+      "stride": "Spoofing"
     },
     {
       "id": 12,
@@ -219,7 +252,10 @@
       "sources": [
         "Microsoft_Security",
         "IC3"
-      ]
+      ],
+      "owasp": "LLM09",
+      "atlas": "AML.T0048",
+      "stride": "Spoofing"
     },
     {
       "id": 13,
@@ -234,7 +270,10 @@
       "sources": [
         "IC3",
         "Microsoft_Security"
-      ]
+      ],
+      "owasp": "LLM09",
+      "atlas": "AML.T0048",
+      "stride": "Spoofing"
     },
     {
       "id": 14,
@@ -249,7 +288,10 @@
       "sources": [
         "OWASP_Agentic",
         "OWASP"
-      ]
+      ],
+      "owasp": "LLM06",
+      "atlas": "AML.T0053",
+      "stride": "Elevation of Privilege"
     },
     {
       "id": 15,
@@ -264,7 +306,10 @@
       "sources": [
         "NIST",
         "FBI"
-      ]
+      ],
+      "owasp": "LLM02",
+      "atlas": "AML.T0057",
+      "stride": "Information Disclosure"
     },
     {
       "id": 16,
@@ -278,7 +323,10 @@
       "riskLevel": "High",
       "sources": [
         "NIST"
-      ]
+      ],
+      "owasp": "LLM09",
+      "atlas": "AML.T0048",
+      "stride": "Repudiation"
     },
     {
       "id": 17,
@@ -292,7 +340,10 @@
       "riskLevel": "High",
       "sources": [
         "OWASP"
-      ]
+      ],
+      "owasp": "LLM05",
+      "atlas": "AML.T0011",
+      "stride": "Tampering"
     },
     {
       "id": 18,
@@ -307,7 +358,10 @@
       "sources": [
         "NIST",
         "FBI"
-      ]
+      ],
+      "owasp": "LLM02",
+      "atlas": "AML.T0057",
+      "stride": "Information Disclosure"
     },
     {
       "id": 19,
@@ -322,7 +376,10 @@
       "sources": [
         "NIST",
         "Microsoft_Copilot"
-      ]
+      ],
+      "owasp": "LLM02",
+      "atlas": "AML.T0057",
+      "stride": "Information Disclosure"
     },
     {
       "id": 20,
@@ -337,7 +394,10 @@
       "sources": [
         "Microsoft_Copilot",
         "NIST"
-      ]
+      ],
+      "owasp": "LLM02",
+      "atlas": "AML.T0057",
+      "stride": "Information Disclosure"
     },
     {
       "id": 21,
@@ -352,7 +412,10 @@
       "sources": [
         "FBI",
         "OWASP"
-      ]
+      ],
+      "owasp": "LLM04",
+      "atlas": "AML.T0020",
+      "stride": "Tampering"
     },
     {
       "id": 22,
@@ -367,7 +430,10 @@
       "sources": [
         "OWASP_Agentic",
         "FBI"
-      ]
+      ],
+      "owasp": "LLM04",
+      "atlas": "AML.T0020",
+      "stride": "Tampering"
     },
     {
       "id": 23,
@@ -382,7 +448,10 @@
       "sources": [
         "OWASP_Agentic",
         "OWASP"
-      ]
+      ],
+      "owasp": "LLM06",
+      "atlas": "AML.T0053",
+      "stride": "Elevation of Privilege"
     },
     {
       "id": 24,
@@ -396,7 +465,10 @@
       "riskLevel": "High",
       "sources": [
         "OWASP_Agentic"
-      ]
+      ],
+      "owasp": "LLM06",
+      "atlas": "AML.T0053",
+      "stride": "Elevation of Privilege"
     },
     {
       "id": 25,
@@ -411,7 +483,10 @@
       "sources": [
         "OWASP_Agentic",
         "OWASP"
-      ]
+      ],
+      "owasp": "LLM03",
+      "atlas": "AML.T0053",
+      "stride": "Elevation of Privilege"
     },
     {
       "id": 26,
@@ -426,7 +501,10 @@
       "sources": [
         "FBI",
         "NIST"
-      ]
+      ],
+      "owasp": "LLM06",
+      "atlas": "AML.T0012",
+      "stride": "Spoofing"
     },
     {
       "id": 27,
@@ -441,7 +519,10 @@
       "sources": [
         "NIST",
         "FBI"
-      ]
+      ],
+      "owasp": "LLM02",
+      "atlas": "AML.T0057",
+      "stride": "Information Disclosure"
     },
     {
       "id": 28,
@@ -456,7 +537,10 @@
       "sources": [
         "OWASP",
         "OWASP_Agentic"
-      ]
+      ],
+      "owasp": "LLM03",
+      "atlas": "AML.T0053",
+      "stride": "Information Disclosure"
     },
     {
       "id": 29,
@@ -470,7 +554,10 @@
       "riskLevel": "Critical",
       "sources": [
         "NIST"
-      ]
+      ],
+      "owasp": "LLM09",
+      "atlas": "AML.T0048",
+      "stride": "Repudiation"
     },
     {
       "id": 30,
@@ -485,7 +572,10 @@
       "sources": [
         "IC3",
         "Microsoft_Security"
-      ]
+      ],
+      "owasp": "LLM09",
+      "atlas": "AML.T0048",
+      "stride": "Spoofing"
     },
     {
       "id": 31,
@@ -500,7 +590,10 @@
       "sources": [
         "Microsoft_Security",
         "IC3"
-      ]
+      ],
+      "owasp": "LLM09",
+      "atlas": "AML.T0048",
+      "stride": "Spoofing"
     },
     {
       "id": 32,
@@ -515,7 +608,10 @@
       "sources": [
         "OWASP",
         "Microsoft_Security"
-      ]
+      ],
+      "owasp": "LLM05",
+      "atlas": "AML.T0011",
+      "stride": "Elevation of Privilege"
     },
     {
       "id": 33,
@@ -530,7 +626,10 @@
       "sources": [
         "NIST",
         "FBI"
-      ]
+      ],
+      "owasp": "LLM02",
+      "atlas": "AML.T0057",
+      "stride": "Information Disclosure"
     },
     {
       "id": 34,
@@ -544,7 +643,10 @@
       "riskLevel": "High",
       "sources": [
         "NIST"
-      ]
+      ],
+      "owasp": "LLM09",
+      "atlas": "AML.T0048",
+      "stride": "Repudiation"
     },
     {
       "id": 35,
@@ -558,7 +660,10 @@
       "riskLevel": "Critical",
       "sources": [
         "NIST"
-      ]
+      ],
+      "owasp": "LLM09",
+      "atlas": "AML.T0048",
+      "stride": "Repudiation"
     },
     {
       "id": 36,
@@ -572,7 +677,10 @@
       "riskLevel": "High",
       "sources": [
         "NIST"
-      ]
+      ],
+      "owasp": "LLM02",
+      "atlas": "AML.T0057",
+      "stride": "Information Disclosure"
     },
     {
       "id": 37,
@@ -587,7 +695,10 @@
       "sources": [
         "NIST",
         "Microsoft_Copilot"
-      ]
+      ],
+      "owasp": "LLM02",
+      "atlas": "AML.T0057",
+      "stride": "Information Disclosure"
     },
     {
       "id": 38,
@@ -602,7 +713,10 @@
       "sources": [
         "OWASP",
         "OWASP_Agentic"
-      ]
+      ],
+      "owasp": "LLM10",
+      "atlas": "AML.T0034",
+      "stride": "Denial of Service"
     },
     {
       "id": 39,
@@ -617,7 +731,10 @@
       "sources": [
         "OWASP",
         "NIST"
-      ]
+      ],
+      "owasp": "LLM07",
+      "atlas": "AML.T0057",
+      "stride": "Information Disclosure"
     },
     {
       "id": 40,
@@ -632,7 +749,10 @@
       "sources": [
         "NCSC",
         "OWASP_Agentic"
-      ]
+      ],
+      "owasp": "LLM01",
+      "atlas": "AML.T0051",
+      "stride": "Tampering"
     },
     {
       "id": 41,
@@ -646,7 +766,10 @@
       "riskLevel": "Medium",
       "sources": [
         "Advisory"
-      ]
+      ],
+      "owasp": "LLM09",
+      "atlas": "AML.T0048",
+      "stride": "Repudiation"
     },
     {
       "id": 42,
@@ -660,7 +783,10 @@
       "riskLevel": "Medium",
       "sources": [
         "Advisory"
-      ]
+      ],
+      "owasp": "LLM09",
+      "atlas": "AML.T0048",
+      "stride": "Repudiation"
     },
     {
       "id": 43,
@@ -674,7 +800,10 @@
       "riskLevel": "High",
       "sources": [
         "Agent safety"
-      ]
+      ],
+      "owasp": "LLM05",
+      "atlas": "AML.T0011",
+      "stride": "Elevation of Privilege"
     },
     {
       "id": 44,
@@ -689,7 +818,10 @@
       "sources": [
         "HIPAA",
         "Regulated data"
-      ]
+      ],
+      "owasp": "LLM02",
+      "atlas": "AML.T0057",
+      "stride": "Information Disclosure"
     }
   ]
 }
