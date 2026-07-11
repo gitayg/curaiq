@@ -329,6 +329,43 @@ fn device_ai_tools() -> serde_json::Value {
     serde_json::json!({ "os": std::env::consts::OS, "osVersion": os_version, "tools": tools })
 }
 
+// Inventories the MCP servers each coding agent has configured (the agent "posture/config" layer).
+// Reads well-known config files and reports only server names + scope + transport — never contents.
+fn mcp_collect(map: &serde_json::Map<String, serde_json::Value>, scope: &str, out: &mut Vec<serde_json::Value>, seen: &mut std::collections::HashSet<String>) {
+    for (name, cfg) in map {
+        if name.is_empty() || !seen.insert(format!("{scope}:{name}")) { continue; }
+        let remote = cfg.get("url").is_some()
+            || cfg.get("type").and_then(|v| v.as_str()) == Some("sse")
+            || cfg.get("transport").and_then(|v| v.as_str()) == Some("sse");
+        out.push(serde_json::json!({ "name": name, "scope": scope, "transport": if remote { "remote" } else { "stdio" } }));
+    }
+}
+
+#[tauri::command]
+fn device_mcp() -> serde_json::Value {
+    let home = std::env::var("HOME").unwrap_or_default();
+    let mut servers: Vec<serde_json::Value> = vec![];
+    let mut seen = std::collections::HashSet::new();
+    // Claude Code — ~/.claude.json (global + per-project mcpServers)
+    if let Ok(txt) = std::fs::read_to_string(format!("{home}/.claude.json")) {
+        if let Ok(j) = serde_json::from_str::<serde_json::Value>(&txt) {
+            if let Some(m) = j.get("mcpServers").and_then(|v| v.as_object()) { mcp_collect(m, "claude", &mut servers, &mut seen); }
+            if let Some(projs) = j.get("projects").and_then(|v| v.as_object()) {
+                for (_, pv) in projs {
+                    if let Some(m) = pv.get("mcpServers").and_then(|v| v.as_object()) { mcp_collect(m, "claude", &mut servers, &mut seen); }
+                }
+            }
+        }
+    }
+    // Cursor — ~/.cursor/mcp.json
+    if let Ok(txt) = std::fs::read_to_string(format!("{home}/.cursor/mcp.json")) {
+        if let Ok(j) = serde_json::from_str::<serde_json::Value>(&txt) {
+            if let Some(m) = j.get("mcpServers").and_then(|v| v.as_object()) { mcp_collect(m, "cursor", &mut servers, &mut seen); }
+        }
+    }
+    serde_json::json!({ "servers": servers })
+}
+
 // --- browser + extension inventory ---
 fn chromium_profiles(base: &str) -> Vec<std::path::PathBuf> {
     let mut out = vec![];
@@ -527,7 +564,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(Term::default())
-        .invoke_handler(tauri::generate_handler![native_log, app_version, identity, run_agent, save_provision, set_agent_auth, open_url, open_login_terminal, restart_app, check_and_install_update, about_info, term_open, term_input, term_resize, device_ai_tools, os_patch_status, device_browsers])
+        .invoke_handler(tauri::generate_handler![native_log, app_version, identity, run_agent, save_provision, set_agent_auth, open_url, open_login_terminal, restart_app, check_and_install_update, about_info, term_open, term_input, term_resize, device_ai_tools, device_mcp, os_patch_status, device_browsers])
         .run(tauri::generate_context!())
         .expect("error while running CuraIQ");
 }

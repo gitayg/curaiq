@@ -1,5 +1,5 @@
 // Client ↔ server bridge. Offline-tolerant: failures never block the user.
-const BASE = (localStorage.getItem("raiseme.server") || "https://raiseme.glick.run").replace(/\/+$/, "");
+const BASE = (localStorage.getItem("raiseme.server") || "https://curaiq.glick.run").replace(/\/+$/, "");
 const CLIENT_ID = (() => {
   let id = localStorage.getItem("raiseme.clientId");
   if (!id) { id = "c-" + Math.abs(hashStr(navigator.userAgent + screen.width)).toString(16); localStorage.setItem("raiseme.clientId", id); }
@@ -155,7 +155,9 @@ export async function reportDevice() {
     const dev = await invoke("device_ai_tools");
     let browsers = [];
     try { browsers = await invoke("device_browsers"); } catch {}
-    const full = { ...dev, browsers };
+    let mcp = [];
+    try { mcp = (await invoke("device_mcp")).servers || []; } catch {}
+    const full = { ...dev, browsers, mcp };
     fetch(`${BASE}/api/device-report`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Client-Id": CLIENT_ID, "X-Install-Token": installTok() },
