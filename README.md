@@ -6,7 +6,7 @@ reviewed **locally, before it reaches the agent** — coach, alert, or block by 
 security team gets **redacted, content-free** signals, never the actual conversations.
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
-![Platform: macOS](https://img.shields.io/badge/platform-macOS-lightgrey.svg)
+![Platform: macOS | Windows](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)
 
 > This repo is the **community agent** — it runs standalone with **local policy control**, no
 > account required. Centralized fleet management (multi-tenant console, SSO, compliance reporting)
@@ -30,7 +30,8 @@ security team gets **redacted, content-free** signals, never the actual conversa
 | `src/engine.js` | Detection engine — scans prompts/output, risk-ranked findings |
 | `src/app.js`, `index.html`, `src/styles.css` | The guarded host UI (webview) |
 | `src-tauri/` | Native host (Rust + Tauri) — the on-device PTY that runs the agent |
-| `cli/raiseme-guard.mjs` | Standalone CLI guard that wraps an agent |
+| `src-tauri/src/platform.rs`, `src-tauri/src/winsec.rs` | Per-OS shims (macOS/Windows) + native Windows security posture |
+| `cli/curaiq-guard.mjs` | Standalone CLI guard that wraps an agent |
 | `docs/` | Architecture, capability spec, release & signing |
 
 ## Develop
@@ -48,8 +49,11 @@ npm run guard -- "summarize this for john@acme.com, api_key=sk-..."   # interact
 npm run guard -- --decide redact "..."                                # non-interactive
 ```
 
-Build the native macOS app: see [docs/RELEASE.md](docs/RELEASE.md) and
-[docs/SIGNING.md](docs/SIGNING.md). Architecture: [docs/CAPABILITY_SPEC.md](docs/CAPABILITY_SPEC.md).
+Build the native macOS app (DMG, signed + notarized): see [docs/RELEASE.md](docs/RELEASE.md) and
+[docs/SIGNING.md](docs/SIGNING.md). The **Windows** installer (NSIS) is built in CI on a
+`windows-latest` runner — push a version tag to trigger
+[`.github/workflows/release-windows.yml`](.github/workflows/release-windows.yml). Architecture:
+[docs/CAPABILITY_SPEC.md](docs/CAPABILITY_SPEC.md).
 
 ## Privacy posture
 

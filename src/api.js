@@ -157,7 +157,9 @@ export async function reportDevice() {
     try { browsers = await invoke("device_browsers"); } catch {}
     let mcp = [];
     try { mcp = (await invoke("device_mcp")).servers || []; } catch {}
-    const full = { ...dev, browsers, mcp };
+    let posture = null;
+    try { const p = await invoke("device_posture"); if (p && Object.keys(p).length) posture = p; } catch {}
+    const full = { ...dev, browsers, mcp, posture };
     fetch(`${BASE}/api/device-report`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Client-Id": CLIENT_ID, "X-Install-Token": installTok() },

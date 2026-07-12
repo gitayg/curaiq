@@ -1,6 +1,6 @@
 [package]
 name = "curaiq"
-version = "0.12.1"
+version = "0.13.0"
 description = "CuraIQ Managed AI Host"
 edition = "2021"
 
@@ -14,6 +14,12 @@ serde_json = "1"
 portable-pty = "0.8"
 tauri-plugin-updater = "2.10.1"
 reqwest = { version = "0.13", features = ["blocking", "json", "query"] }
+
+# Native Windows security-posture inventory. `wmi` is the ergonomic serde layer over windows-rs
+# (SecurityCenter2 AV/firewall, BitLocker); `winreg` covers firewall-profile + reboot-pending state.
+[target.'cfg(windows)'.dependencies]
+wmi = "0.14"
+winreg = "0.52"
 
 [lib]
 name = "curaiq_lib"

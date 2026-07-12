@@ -1,0 +1,197 @@
+// Native Windows security-posture inventory via the windows-rs stack — WMI (SecurityCenter2 for
+// registered AV + firewall products, and BitLocker volume encryption) plus the registry (firewall
+// per-profile state, reboot-pending flags, last-update time, installed hotfixes). Compiled only on
+// Windows. Every query is self-contained and degrades to a null/empty value on any error, so a
+// missing WMI class, a locked-down namespace, or a non-elevated context never fails the whole call.
+use serde::Deserialize;
+use winreg::enums::*;
+use winreg::RegKey;
+use wmi::{COMLibrary, WMIConnection};
+
+// --- WMI row shapes ---
+
+// SecurityCenter2 exposes AV/firewall products with camelCase property names.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct AntiVirusProduct {
+    display_name: String,
+    product_state: u32,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct FirewallProduct {
+    display_name: String,
+    product_state: u32,
+}
+
+// Win32_* classes use PascalCase property names. The `wmi` crate derives the queried class from the
+// struct name, so the container `rename` must be the exact WMI class name.
+#[derive(Deserialize)]
+#[serde(rename = "Win32_EncryptableVolume", rename_all = "PascalCase")]
+struct EncryptableVolume {
+    drive_letter: Option<String>,
+    protection_status: Option<u32>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename = "Win32_QuickFixEngineering", rename_all = "PascalCase")]
+struct QuickFix {
+    #[allow(dead_code)]
+    hot_fix_id: Option<String>,
+    installed_on: Option<String>,
+}
+
+// Decode a SecurityCenter2 productState DWORD → (real-time protection enabled, definitions current).
+// Byte layout: [provider][scanner][outdated]; scanner 0x10/0x11 = on, outdated 0x00 = up to date.
+fn av_flags(state: u32) -> (bool, bool) {
+    let scanner = (state >> 8) & 0xff;
+    let outdated = state & 0xff;
+    (scanner == 0x10 || scanner == 0x11, outdated == 0x00)
+}
+
+fn query_av() -> Vec<serde_json::Value> {
+    let mut out = vec![];
+    if let Ok(com) = COMLibrary::new() {
+        if let Ok(con) = WMIConnection::with_namespace_path("ROOT\\SecurityCenter2", com) {
+            if let Ok(list) = con.query::<AntiVirusProduct>() {
+                for p in list {
+                    let (enabled, up_to_date) = av_flags(p.product_state);
+                    out.push(serde_json::json!({
+                        "name": p.display_name,
+                        "enabled": enabled,
+                        "upToDate": up_to_date,
+                        "state": format!("0x{:06x}", p.product_state)
+                    }));
+                }
+            }
+        }
+    }
+    out
+}
+
+// Third-party firewall products registered with Security Center (the built-in Defender firewall is
+// reported separately via the registry profile state below).
+fn firewall_products() -> Vec<serde_json::Value> {
+    let mut out = vec![];
+    if let Ok(com) = COMLibrary::new() {
+        if let Ok(con) = WMIConnection::with_namespace_path("ROOT\\SecurityCenter2", com) {
+            if let Ok(list) = con.query::<FirewallProduct>() {
+                for p in list {
+                    let (enabled, _) = av_flags(p.product_state);
+                    out.push(serde_json::json!({ "name": p.display_name, "enabled": enabled }));
+                }
+            }
+        }
+    }
+    out
+}
+
+// Windows Defender firewall enablement per profile, straight from the registry (no elevation, no scan).
+fn firewall_state() -> serde_json::Value {
+    let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+    let read = |profile: &str| -> Option<bool> {
+        let path = format!(
+            r"SYSTEM\CurrentControlSet\Services\SharedAccess\Parameters\FirewallPolicy\{profile}"
+        );
+        hklm.open_subkey(path)
+            .ok()
+            .and_then(|k| k.get_value::<u32, _>("EnableFirewall").ok())
+            .map(|v| v == 1)
+    };
+    serde_json::json!({
+        "domain": read("DomainProfile"),
+        "private": read("StandardProfile"),
+        "public": read("PublicProfile"),
+        "products": firewall_products()
+    })
+}
+
+// BitLocker protection status per volume (0 = off, 1 = on). The namespace requires elevation to
+// query; without it we report status "unavailable" rather than failing.
+fn bitlocker() -> serde_json::Value {
+    let com = match COMLibrary::new() {
+        Ok(c) => c,
+        Err(_) => return serde_json::json!({ "status": "unknown" }),
+    };
+    match WMIConnection::with_namespace_path("ROOT\\CIMV2\\Security\\MicrosoftVolumeEncryption", com) {
+        Ok(con) => match con.query::<EncryptableVolume>() {
+            Ok(vols) => {
+                let arr: Vec<serde_json::Value> = vols
+                    .into_iter()
+                    .map(|v| {
+                        serde_json::json!({
+                            "drive": v.drive_letter.unwrap_or_default(),
+                            "protected": v.protection_status.map(|s| s == 1)
+                        })
+                    })
+                    .collect();
+                serde_json::json!({ "volumes": arr })
+            }
+            Err(_) => serde_json::json!({ "status": "unavailable (needs admin)" }),
+        },
+        Err(_) => serde_json::json!({ "status": "unknown" }),
+    }
+}
+
+// The security-posture bundle reported to the CuraIQ server (metadata only, no content).
+pub fn security_posture() -> serde_json::Value {
+    serde_json::json!({
+        "antivirus": query_av(),
+        "firewall": firewall_state(),
+        "bitlocker": bitlocker()
+    })
+}
+
+// Installed hotfixes (count + a recent id) via WMI QFE — cheap posture signal, no online scan.
+fn query_qfe() -> (usize, String) {
+    if let Ok(com) = COMLibrary::new() {
+        if let Ok(con) = WMIConnection::with_namespace_path("ROOT\\CIMV2", com) {
+            if let Ok(list) = con.query::<QuickFix>() {
+                let count = list.len();
+                let latest = list
+                    .iter()
+                    .filter_map(|q| q.installed_on.clone())
+                    .last()
+                    .unwrap_or_default();
+                return (count, latest);
+            }
+        }
+    }
+    (0, String::new())
+}
+
+// Patch posture without an online Windows Update scan: reboot-pending flags + last-successful-update
+// time from the registry, plus installed-hotfix stats. `upToDate` stays null — enumerating *pending*
+// updates needs the online COM UpdateSearcher, which we deliberately avoid here (slow, can hang).
+pub fn patch_status() -> serde_json::Value {
+    let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+    let key_exists = |p: &str| hklm.open_subkey(p).is_ok();
+    let reboot_pending = key_exists(
+        r"SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending",
+    ) || key_exists(
+        r"SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired",
+    ) || hklm
+        .open_subkey(r"SYSTEM\CurrentControlSet\Control\Session Manager")
+        .ok()
+        .and_then(|k| k.get_raw_value("PendingFileRenameOperations").ok())
+        .is_some();
+
+    let last_update = hklm
+        .open_subkey(r"SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\Results\Install")
+        .ok()
+        .and_then(|k| k.get_value::<String, _>("LastSuccessTime").ok())
+        .unwrap_or_default();
+
+    let (hotfix_count, latest_hotfix) = query_qfe();
+
+    serde_json::json!({
+        "upToDate": serde_json::Value::Null,
+        "count": 0,
+        "titles": [],
+        "rebootPending": reboot_pending,
+        "lastUpdate": last_update,
+        "hotfixCount": hotfix_count,
+        "latestHotfix": latest_hotfix
+    })
+}
