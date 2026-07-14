@@ -254,13 +254,32 @@ fn device_ai_tools() -> serde_json::Value { platform::ai_tools() }
 
 // Inventories the MCP servers each coding agent has configured (the agent "posture/config" layer).
 // Reads well-known config files and reports only server names + scope + transport — never contents.
+// #16 — heuristic "tool-poisoning" risk for an MCP server's launch config. We can't read the
+// server's tool descriptions without connecting, so we flag the highest-signal proxy: a launch
+// command that fetches and executes remote code, or runs an inline shell. Never inspects contents.
+fn mcp_risk(cfg: &serde_json::Value) -> Option<&'static str> {
+    let mut parts = String::new();
+    if let Some(c) = cfg.get("command").and_then(|v| v.as_str()) { parts.push_str(c); parts.push(' '); }
+    if let Some(args) = cfg.get("args").and_then(|v| v.as_array()) {
+        for a in args { if let Some(s) = a.as_str() { parts.push_str(s); parts.push(' '); } }
+    }
+    let p = parts.to_lowercase();
+    let fetch = p.contains("curl") || p.contains("wget");
+    let pipe_sh = p.contains("| sh") || p.contains("|sh") || p.contains("| bash") || p.contains("|bash");
+    if fetch && pipe_sh { return Some("launch command fetches and pipes a remote script to a shell"); }
+    if p.contains("bash -c") || p.contains("sh -c") || p.contains("eval ") { return Some("launch command runs an inline shell"); }
+    None
+}
+
 fn mcp_collect(map: &serde_json::Map<String, serde_json::Value>, scope: &str, out: &mut Vec<serde_json::Value>, seen: &mut std::collections::HashSet<String>) {
     for (name, cfg) in map {
         if name.is_empty() || !seen.insert(format!("{scope}:{name}")) { continue; }
         let remote = cfg.get("url").is_some()
             || cfg.get("type").and_then(|v| v.as_str()) == Some("sse")
             || cfg.get("transport").and_then(|v| v.as_str()) == Some("sse");
-        out.push(serde_json::json!({ "name": name, "scope": scope, "transport": if remote { "remote" } else { "stdio" } }));
+        let mut entry = serde_json::json!({ "name": name, "scope": scope, "transport": if remote { "remote" } else { "stdio" } });
+        if let Some(reason) = mcp_risk(cfg) { entry["risk"] = serde_json::Value::String(reason.into()); }
+        out.push(entry);
     }
 }
 
@@ -287,6 +306,68 @@ fn device_mcp() -> serde_json::Value {
         }
     }
     serde_json::json!({ "servers": servers })
+}
+
+// Which account each agent CLI is logged in as — the account NAME only (email / username), never
+// the token. Lets the console report the list of accounts used with AI agents (e.g. to spot
+// personal accounts). Reads only identity fields from well-known configs; tokens are never touched.
+#[tauri::command]
+fn device_accounts() -> serde_json::Value {
+    let home = platform::home_dir();
+    let mut accounts: Vec<serde_json::Value> = vec![];
+
+    // Claude Code — ~/.claude.json → oauthAccount.emailAddress (+ organizationName). Not the token.
+    if let Ok(txt) = std::fs::read_to_string(format!("{home}/.claude.json")) {
+        if let Ok(j) = serde_json::from_str::<serde_json::Value>(&txt) {
+            if let Some(acc) = j.get("oauthAccount") {
+                if let Some(email) = acc.get("emailAddress").and_then(|v| v.as_str()).filter(|s| !s.is_empty()) {
+                    let org = acc.get("organizationName").and_then(|v| v.as_str());
+                    accounts.push(serde_json::json!({ "agent": "claude", "account": email, "org": org }));
+                }
+            }
+        }
+    }
+    // GitHub Copilot — ~/.config/gh/hosts.yml → the authenticated `user:` (username, not a token).
+    if let Ok(txt) = std::fs::read_to_string(format!("{home}/.config/gh/hosts.yml")) {
+        for line in txt.lines() {
+            if let Some(u) = line.trim().strip_prefix("user:") {
+                let name = u.trim();
+                if !name.is_empty() { accounts.push(serde_json::json!({ "agent": "copilot", "account": name })); break; }
+            }
+        }
+    }
+    // Codex (OpenAI) — presence only. The account lives inside a token we deliberately do not parse.
+    if std::path::Path::new(&format!("{home}/.codex/auth.json")).exists() {
+        accounts.push(serde_json::json!({ "agent": "codex", "account": serde_json::Value::Null }));
+    }
+
+    serde_json::json!({ "accounts": accounts })
+}
+
+// #5 — local sensitive-file awareness. Given a directory (e.g. the agent's working dir), lists
+// sensitive FILE NAMES present — secrets, private keys, credential files — so the user can be
+// warned before an agent reads or transmits them. Names only; file contents are never read. Shallow.
+#[tauri::command]
+fn dir_sensitive(path: String) -> serde_json::Value {
+    let dir = if path.trim().is_empty() { platform::home_dir() } else { path };
+    let sensitive = |name: &str| -> bool {
+        let n = name.to_lowercase();
+        n == ".env" || n.starts_with(".env.")
+            || n.ends_with(".pem") || n.ends_with(".key") || n.ends_with(".pfx") || n.ends_with(".p12")
+            || n == "id_rsa" || n == "id_ed25519" || n == "id_dsa" || n == "id_ecdsa"
+            || n == "credentials" || n == "credentials.json" || n == ".netrc" || n == ".npmrc" || n == ".pypirc"
+            || n == "service-account.json" || n.ends_with("-key.json")
+            || n == ".git-credentials" || n == "secrets.yaml" || n == "secrets.yml"
+    };
+    let mut found: Vec<String> = vec![];
+    if let Ok(rd) = std::fs::read_dir(&dir) {
+        for e in rd.flatten() {
+            if found.len() >= 50 { break; }
+            let name = e.file_name().to_string_lossy().to_string();
+            if sensitive(&name) { found.push(name); }
+        }
+    }
+    serde_json::json!({ "dir": dir, "sensitive": found })
 }
 
 // Inventories installed browsers and their extensions (name, id, broad-access flag).
@@ -366,7 +447,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(Term::default())
-        .invoke_handler(tauri::generate_handler![native_log, app_version, identity, run_agent, save_provision, set_agent_auth, open_url, open_login_terminal, restart_app, check_and_install_update, about_info, term_open, term_input, term_resize, device_ai_tools, device_mcp, os_patch_status, device_browsers, device_posture])
+        .invoke_handler(tauri::generate_handler![native_log, app_version, identity, run_agent, save_provision, set_agent_auth, open_url, open_login_terminal, restart_app, check_and_install_update, about_info, term_open, term_input, term_resize, device_ai_tools, device_mcp, os_patch_status, device_browsers, device_posture, device_accounts, dir_sensitive])
         .run(tauri::generate_context!())
         .expect("error while running CuraIQ");
 }

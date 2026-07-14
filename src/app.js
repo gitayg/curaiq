@@ -1,5 +1,6 @@
 import { DETECTORS } from "../data/detectors.js";
 import { CONTENT_RULES } from "../data/content-rules.js";
+import { TIER_OF } from "../data/data-tiers.js";
 import { DetectionEngine } from "./engine.js";
 import { Audit } from "./audit.js";
 import { getPolicy, postAlert, nativeLog, loadIdentity, enroll, serverBase, currentTenant, setAgentAuth, getAuthMethod, setAuthMethod, openUrl, reportDevice, reportPatches, reportPrompt, appVersion, checkUpdate, restartApp, checkAndInstallUpdate, reportIdentity, aboutInfo } from "./api.js";
@@ -343,8 +344,18 @@ function toAgent(text) { sendRaw(text + "\r"); }
 
 // ----- policy review -----
 // Actions: "disabled" (off) · "alert" (report to dashboard, silent for the user) ·
-//          "notify" (report + show the user a warning they can override) · "block" (report + block).
-function threatAction(id) { return policy?.threatPolicy?.[id] || "notify"; }
+//          "notify" (report + show the user a warning they can override) ·
+//          "justify" (report + gate the prompt, logged distinctly so the user must consciously
+//                     proceed with a business justification) · "block" (report + hard block).
+// Per-threat action wins; else the data-tier default (policy.tierPolicy) for the threat's tier;
+// else "notify". Lets an admin govern by data class without losing any per-threat override.
+function threatAction(id) {
+  const explicit = policy?.threatPolicy?.[id];
+  if (explicit) return explicit;
+  const tier = TIER_OF[id];
+  const tierAct = tier && policy?.tierPolicy?.[tier];
+  return tierAct || "notify";
+}
 let lastFound = 0; // detections (incl. silent) from the most recent review — for prompt stats.
 
 function reviewContent(text, reviewStage, mount) {
@@ -356,12 +367,12 @@ function reviewContent(text, reviewStage, mount) {
     const act = cp[c.ruleId] || "disabled";
     if (act === "disabled") continue;
     lastFound++;
-    const block = act === "block";
-    const pseudo = { mode: block ? "block" : "warn", threat: { id: 0, category: `Content: ${c.label}`, riskLevel: block ? "Blocked" : "High" } };
-    // Visibility for every active action; local log + user-facing card only for notify/block.
-    report(audit.record({ action: block ? "blocked" : act, stage: reviewStage, tool: TOOL, finding: pseudo, content: c.match }, act !== "alert"));
-    if (act !== "alert") mount.appendChild(contentCard(c, reviewStage, block));
-    blocked = blocked || block;
+    const gate = act === "block" || act === "justify"; // both hold the prompt; justify is recoverable
+    const pseudo = { mode: gate ? "block" : "warn", threat: { id: 0, category: `Content: ${c.label}`, riskLevel: gate ? "Blocked" : "High" } };
+    // Visibility for every active action; local log + user-facing card only for notify/justify/block.
+    report(audit.record({ action: act === "block" ? "blocked" : act, stage: reviewStage, tool: TOOL, finding: pseudo, content: c.match }, act !== "alert"));
+    if (act !== "alert") mount.appendChild(contentCard(c, reviewStage, gate));
+    blocked = blocked || gate;
   }
   return blocked;
 }
@@ -372,10 +383,10 @@ function renderFindings(text, stage, mount) {
     const act = threatAction(f.threat.id);
     if (act === "disabled") continue;
     lastFound++;
-    const block = act === "block";
-    report(audit.record({ action: block ? "blocked" : act, stage, tool: TOOL, finding: f, content: f.match }, act !== "alert"));
-    if (act !== "alert") mount.appendChild(card(f, block));
-    blocked = blocked || block;
+    const gate = act === "block" || act === "justify"; // both hold the prompt; justify is recoverable
+    report(audit.record({ action: act === "block" ? "blocked" : act, stage, tool: TOOL, finding: f, content: f.match }, act !== "alert"));
+    if (act !== "alert") mount.appendChild(card(f, gate));
+    blocked = blocked || gate;
   }
   return blocked;
 }
@@ -386,8 +397,8 @@ function blocksIn(text) {
   const out = [];
   const cp = policy?.contentPolicy || {};
   const enabled = Object.keys(cp).filter((id) => cp[id] && cp[id] !== "disabled");
-  for (const c of engine.scanContent(text, enabled)) if ((cp[c.ruleId] || "disabled") === "block") out.push({ match: c.match, label: c.label });
-  for (const f of engine.scan(text, "prompt")) if (threatAction(f.threat.id) === "block") out.push({ match: f.match, label: f.threat.category });
+  for (const c of engine.scanContent(text, enabled)) { const a = cp[c.ruleId] || "disabled"; if (a === "block" || a === "justify") out.push({ match: c.match, label: c.label }); }
+  for (const f of engine.scan(text, "prompt")) { const a = threatAction(f.threat.id); if (a === "block" || a === "justify") out.push({ match: f.match, label: f.threat.category }); }
   return out;
 }
 
