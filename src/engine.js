@@ -61,6 +61,50 @@ export class DetectionEngine {
     );
   }
 
+  // Multi-turn injection review. A jailbreak is often split across turns (persona setup in one
+  // message, the payload in a later one) to slip past single-prompt scanning. Given the recent
+  // window of user turns (oldest→newest strings), this: (a) runs prompt-stage injection detectors
+  // over the joined window to catch split payloads, (b) runs session-stage scaffolding detectors,
+  // and (c) flags persistence when injection signals recur across separate turns.
+  scanSession(turns, windowSize = 6) {
+    const recent = (turns || []).filter((t) => t && t.trim()).slice(-windowSize);
+    if (recent.length < 2) return [];
+    const joined = recent.join("\n");
+    const byThreat = new Map();
+
+    const add = (finding) => {
+      if (!finding.threat) return;
+      const prev = byThreat.get(finding.threat.id);
+      if (!prev || finding.mode === "warn") byThreat.set(finding.threat.id, finding);
+    };
+
+    // (a) prompt-stage injection detectors over the whole window (split payloads)
+    // (b) session-stage scaffolding detectors
+    for (const d of this.detectors) {
+      const injPrompt = d.stage === "prompt" && d.detectorId.startsWith("inj");
+      if (!injPrompt && d.stage !== "session") continue;
+      const match = this._firstMatch(joined, d.patterns);
+      if (!match) continue;
+      const threat = this.threat(d.threatId);
+      if (!threat) continue;
+      add({ detectorId: d.detectorId, mode: d.mode || "warn", hint: d.hint, match: this._clip(match), threat, multiTurn: true });
+    }
+
+    // (c) persistence: injection signals in ≥2 distinct turns
+    const injDetectors = this.detectors.filter((d) => d.stage === "prompt" && d.detectorId.startsWith("inj"));
+    const flagged = recent.filter((t) => injDetectors.some((d) => this._firstMatch(t, d.patterns)));
+    if (flagged.length >= 2) {
+      const threat = this.threat(3);
+      if (threat) add({ detectorId: "inj-persistent", mode: "warn", hint: `Repeated injection attempts across ${flagged.length} turns.`, match: `${flagged.length} turns`, threat, multiTurn: true });
+    }
+
+    return [...byThreat.values()].sort(
+      (a, b) =>
+        (LEVEL_RANK[b.threat.riskLevel] - LEVEL_RANK[a.threat.riskLevel]) ||
+        (b.threat.riskScore - a.threat.riskScore)
+    );
+  }
+
   // Replaces matched sensitive spans with redaction tags. Skips coach-mode detectors
   // (contextual, not redactable). Used by the pre-flight guard before forwarding to the agent.
   redact(text, stage) {

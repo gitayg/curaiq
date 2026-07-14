@@ -822,6 +822,23 @@
       "owasp": "LLM02",
       "atlas": "AML.T0057",
       "stride": "Information Disclosure"
+    },
+    {
+      "id": 45,
+      "category": "Advisory & Guidance",
+      "threat": "Copyright / license contamination",
+      "example": "The AI reproduces a large verbatim block of licensed or copyrighted code (e.g. a GPL/AGPL file, a copyright header, or 'All rights reserved' source), or such code is pasted into a prompt.",
+      "response": "This looks like licensed or copyrighted source (e.g. GPL/AGPL, a copyright header). Pasting it into or accepting it from the AI can create license-contamination or IP risk — confirm the license and provenance before you reuse it.",
+      "severity": 3,
+      "likelihood": 3,
+      "riskScore": 9,
+      "riskLevel": "Medium",
+      "sources": [
+        "Advisory"
+      ],
+      "owasp": "LLM05",
+      "atlas": "AML.T0048",
+      "stride": "Repudiation"
     }
   ]
 }

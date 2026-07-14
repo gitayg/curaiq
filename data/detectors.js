@@ -1,4 +1,16 @@
+import { INJECTION_I18N } from "./injection-i18n.js";
+
 export const DETECTORS = [
+  {
+    // Multilingual prompt-injection — the "ignore previous instructions" / "reveal system prompt"
+    // intent across ~29 languages (English + Hebrew are covered by inj-ignore below).
+    detectorId: "inj-multilingual",
+    threatId: 3,
+    stage: "prompt",
+    mode: "warn",
+    hint: "Contains an instruction-override phrase in a non-English language (possible injection).",
+    patterns: INJECTION_I18N
+  },
   {
     // Advisory: contract / legal language → recommend legal counsel (notify by default), logged to dashboard.
     detectorId: "legal-language",
@@ -9,6 +21,38 @@ export const DETECTORS = [
     patterns: [
       /\b(hereby|whereas|indemnif\w+|in witness whereof|govern(ing|ed) (law|by the)|non[- ]disclosure|terms (and|&) conditions|force majeure|represents and warrants|breach of (this )?(contract|agreement)|party of the (first|second) part|binding (agreement|contract)|arbitration clause|confidentiality (clause|agreement)|liabilit(y|ies) (shall|will|is) (limited|excluded)|\bNDA\b)/i,
       /(חוזה|הסכם|כתב התחייבות|אי[- ]גילוי|סעיף סודיות|הצדדים מסכימים|תניית|בכפוף לדין|בוררות|שיפוט בלעדי)/
+    ]
+  },
+  {
+    // Advisory (legal): licensed / copyrighted source pasted INTO a prompt → license-contamination risk.
+    detectorId: "legal-license-prompt",
+    threatId: 45,
+    stage: "prompt",
+    mode: "warn",
+    hint: "Looks like licensed / copyrighted source — confirm the license before reusing.",
+    patterns: [
+      /SPDX-License-Identifier:/i,
+      /\b(GNU (GENERAL|LESSER GENERAL) PUBLIC LICENSE|Mozilla Public License|Apache License,? Version|BSD [23]-Clause|Creative Commons)\b/i,
+      /\bLicensed under the .{0,40}License\b/i,
+      /Permission is hereby granted, free of charge/i,
+      /Copyright\s*(\([cC]\)|©)\s*\d{4}/,
+      /\bAll rights reserved\b/i,
+      /\b([AL]?GPL(v?[23](\.0)?)?|MPL-2\.0|BSD-[23]-Clause)\b/
+    ]
+  },
+  {
+    // Advisory (legal): the AGENT OUTPUT reproduces a large verbatim licensed/copyrighted block.
+    detectorId: "legal-license-output",
+    threatId: 45,
+    stage: "output",
+    mode: "warn",
+    hint: "AI output contains a licensed / copyrighted block — verify provenance before reuse.",
+    patterns: [
+      /SPDX-License-Identifier:/i,
+      /\b(GNU (GENERAL|LESSER GENERAL) PUBLIC LICENSE|Mozilla Public License|Apache License,? Version|BSD [23]-Clause)\b/i,
+      /Permission is hereby granted, free of charge/i,
+      /Copyright\s*(\([cC]\)|©)\s*\d{4}[^\n]{0,60}\ball rights reserved\b/i,
+      /This (program|file|software) is free software.{0,60}(GNU|redistribute)/is
     ]
   },
   {
@@ -123,6 +167,23 @@ export const DETECTORS = [
       /disregard (all |any )?(previous|prior|above|earlier)/i,
       /\b(reveal|print|show) (your |the )?(system prompt|instructions|developer message)\b/i,
       /\b(jailbreak|do anything now|\bDAN\b)\b/i
+    ]
+  },
+  {
+    // Multi-turn jailbreak scaffolding — persona/role-play setup that primes a later payload.
+    // Evaluated over the recent conversation window (stage "session"), not a single prompt.
+    detectorId: "inj-multiturn-persona",
+    threatId: 3,
+    stage: "session",
+    mode: "warn",
+    hint: "Conversation is setting up a jailbreak persona / role-play across turns.",
+    patterns: [
+      /(from now on|starting now|for the rest of (this|our))\s+you\s+(are|will be|act|must)/i,
+      /you are now\s+(a|an|dan|in\s+developer\s+mode|jailbroken)/i,
+      /let'?s\s+play\s+a\s+(game|role.?play|scenario)/i,
+      /(pretend|imagine|suppose)\s+(that\s+)?you\s+(are|have\s+no|can\s+ignore)/i,
+      /\b(developer\s+mode|do\s+anything\s+now|\bDAN\b|opposite\s+day)\b/i,
+      /this\s+is\s+(just\s+)?(a\s+)?(hypothetical|fictional|story|thought\s+experiment)/i
     ]
   },
   {
