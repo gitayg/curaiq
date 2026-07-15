@@ -8,9 +8,12 @@ security team gets **redacted, content-free** signals, never the actual conversa
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 ![Platform: macOS | Windows](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)
 
+**🌐 [curaiq.glick.run — hosted console](https://curaiq.glick.run) · 📄 [Overview & docs on glick.run](https://glick.run/curaiq.html)**
+
 > This repo is the **community agent** — it runs standalone with **local policy control**, no
 > account required. Centralized fleet management (multi-tenant console, SSO, compliance reporting)
-> is provided by a **separate, proprietary** CuraIQ management server; register to use it.
+> is provided by a **separate, proprietary** CuraIQ management server — sign in or create an account
+> at **[curaiq.glick.run](https://curaiq.glick.run)**.
 
 ## How it works
 
