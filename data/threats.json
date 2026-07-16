@@ -839,6 +839,74 @@
       "owasp": "LLM05",
       "atlas": "AML.T0048",
       "stride": "Repudiation"
+    },
+    {
+      "id": 46,
+      "category": "Human Approval Required",
+      "threat": "Changing security settings, IAM, or firewall",
+      "example": "The prompt asks the agent to weaken or change security posture — disable a firewall, open a security group to 0.0.0.0/0, grant IAM privileges, add a sudoer, or turn off endpoint protection.",
+      "response": "This changes security, IAM, or firewall settings — a high-impact action that should require human approval. Confirm the change is intended and authorized before letting the agent proceed.",
+      "severity": 3,
+      "likelihood": 2,
+      "riskScore": 6,
+      "riskLevel": "High",
+      "sources": [
+        "Human Approval"
+      ],
+      "owasp": "LLM06",
+      "atlas": "AML.T0048",
+      "stride": "Elevation of Privilege"
+    },
+    {
+      "id": 47,
+      "category": "Human Approval Required",
+      "threat": "Sending external email or notifications",
+      "example": "The prompt asks the agent to send an email, SMS, or webhook/notification to an external recipient (SMTP, SendGrid, Mailgun, Twilio, a Slack/Discord webhook).",
+      "response": "This sends a message to an external recipient on your behalf — it should require human approval. Verify the recipient and content before the agent sends anything.",
+      "severity": 2,
+      "likelihood": 2,
+      "riskScore": 4,
+      "riskLevel": "Medium",
+      "sources": [
+        "Human Approval"
+      ],
+      "owasp": "LLM06",
+      "atlas": "AML.T0048",
+      "stride": "Information Disclosure"
+    },
+    {
+      "id": 48,
+      "category": "Human Approval Required",
+      "threat": "Creating users, tokens, or API keys",
+      "example": "The prompt asks the agent to create a user or service account, generate an API key or access token, or mint credentials (aws iam create-access-key, create service account, ssh-keygen, adduser).",
+      "response": "This creates an identity or credential — a high-impact action that should require human approval. Confirm who the credential is for and that it's authorized before proceeding.",
+      "severity": 3,
+      "likelihood": 2,
+      "riskScore": 6,
+      "riskLevel": "High",
+      "sources": [
+        "Human Approval"
+      ],
+      "owasp": "LLM06",
+      "atlas": "AML.T0048",
+      "stride": "Elevation of Privilege"
+    },
+    {
+      "id": 49,
+      "category": "Human Approval Required",
+      "threat": "Deploying to a production environment",
+      "example": "The prompt asks the agent to deploy or release to production (terraform apply, kubectl apply to a prod namespace, helm upgrade --namespace prod, vercel --prod, firebase deploy, npm publish, git push to a production branch).",
+      "response": "This deploys or releases to production — it should require human approval. Confirm the target environment and that the release is intended before the agent proceeds.",
+      "severity": 3,
+      "likelihood": 2,
+      "riskScore": 6,
+      "riskLevel": "High",
+      "sources": [
+        "Human Approval"
+      ],
+      "owasp": "LLM06",
+      "atlas": "AML.T0048",
+      "stride": "Tampering"
     }
   ]
 }

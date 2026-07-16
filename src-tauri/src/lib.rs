@@ -41,7 +41,9 @@ fn term_open(app: tauri::AppHandle, state: tauri::State<Term>, cols: u16, rows: 
     let _ = app.emit("term-data", format!("\x1b[2m[CuraIQ] launching {tool}…\x1b[0m\r\n"));
 
     let bin = find_tool(tool).ok_or(format!("{tool} CLI not found"))?;
-    let mut cmd = platform::agent_command(&bin);
+    // Experimental opt-in host isolation: launch the agent inside a sandbox when enabled in config.
+    let isolate = read_config().get("isolateAgent").and_then(|v| v.as_bool()).unwrap_or(false);
+    let mut cmd = platform::agent_command(&bin, isolate);
     // Claude resumes the previous conversation across app restarts (only once a first session exists,
     // so a fresh install doesn't `--continue` into nothing). Codex/Copilot start a fresh session.
     if tool == "claude" && read_config().get("hadSession").and_then(|v| v.as_bool()).unwrap_or(false) { cmd.arg("--continue"); }

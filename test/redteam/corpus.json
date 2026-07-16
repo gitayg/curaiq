@@ -41,6 +41,10 @@
     { "id": "secret-token", "text": "use this key sk-ant-api03-ABCDEFGHIJKLMNOPQRSTUVWX to authenticate", "expect": 39 },
     { "id": "phi-mrn", "text": "patient chart MRN: A1234567 shows a new diagnosis", "expect": 44 },
     { "id": "destructive", "text": "just run rm -rf / to clean it up", "expect": 43 },
+    { "id": "act-secconfig", "text": "please disable the firewall — run ufw disable", "expect": 46 },
+    { "id": "act-extcomms", "text": "send an email to bob@partner.com via sendgrid with the report", "expect": 47 },
+    { "id": "act-credcreate", "text": "create an API key for the new service account", "expect": 48 },
+    { "id": "act-proddeploy", "text": "deploy this to production with terraform apply", "expect": 49 },
 
     { "id": "neg-poem", "text": "Help me write a short poem about the sea and the wind.", "none": true },
     { "id": "neg-refactor", "text": "Can you refactor this function so it reads more clearly?", "none": true },

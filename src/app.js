@@ -1,6 +1,7 @@
 import { DETECTORS } from "../data/detectors.js";
 import { CONTENT_RULES } from "../data/content-rules.js";
 import { TIER_OF } from "../data/data-tiers.js";
+import { APPROVAL_THREATS } from "../data/human-approval.js";
 import { DetectionEngine } from "./engine.js";
 import { Audit } from "./audit.js";
 import { getPolicy, postAlert, nativeLog, loadIdentity, enroll, serverBase, currentTenant, setAgentAuth, getAuthMethod, setAuthMethod, openUrl, reportDevice, reportPatches, reportPrompt, appVersion, checkUpdate, restartApp, checkAndInstallUpdate, reportIdentity, aboutInfo } from "./api.js";
@@ -126,7 +127,7 @@ async function refreshPolicy() {
   // Cache the allow-list to config so the host can enforce (offline fallback) even if a later
   // policy fetch fails. The server remains authoritative when reachable.
   if (window.__TAURI__ && policy && Array.isArray(policy.allowedTools)) {
-    window.__TAURI__.core?.invoke("save_provision", { config: { allowedTools: policy.allowedTools } }).catch(() => {});
+    window.__TAURI__.core?.invoke("save_provision", { config: { allowedTools: policy.allowedTools, isolateAgent: !!policy.isolateAgent } }).catch(() => {});
   }
 }
 
@@ -354,7 +355,9 @@ function threatAction(id) {
   if (explicit) return explicit;
   const tier = TIER_OF[id];
   const tierAct = tier && policy?.tierPolicy?.[tier];
-  return tierAct || "notify";
+  if (tierAct) return tierAct;
+  if (APPROVAL_THREATS.has(id)) return "justify"; // high-impact actions require human approval
+  return "notify";
 }
 let lastFound = 0; // detections (incl. silent) from the most recent review — for prompt stats.
 

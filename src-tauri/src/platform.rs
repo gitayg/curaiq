@@ -220,11 +220,51 @@ pub fn which(tool: &str) -> Option<String> {
     None
 }
 
-// Build the launch command for an agent binary. On Windows, .cmd/.bat shims can't be executed
-// directly by CreateProcess, so wrap them in `cmd.exe /c`.
-pub fn agent_command(bin: &str) -> CommandBuilder {
+// Host-based isolation (experimental, opt-in). On macOS, write a conservative Seatbelt profile that
+// lets the agent operate normally in the user's home working area but blocks writes to system, app,
+// and boot locations — so a compromised or tricked agent can't modify the OS, install persistence,
+// or tamper with other apps. Network and normal file work stay available. Returns the profile path.
+#[cfg(target_os = "macos")]
+fn sandbox_profile_path() -> Option<String> {
+    let dir = config_dir();
+    std::fs::create_dir_all(&dir).ok()?;
+    let path = format!("{dir}/agent-sandbox.sb");
+    let profile = "(version 1)\n\
+;; CuraIQ agent isolation (experimental) — governance sandbox. Allow normal operation; deny writes\n\
+;; to system / app / boot locations so the agent cannot modify the OS or install persistence.\n\
+(allow default)\n\
+(deny file-write*\n\
+  (subpath \"/System\")\n\
+  (subpath \"/usr/bin\")\n\
+  (subpath \"/usr/sbin\")\n\
+  (subpath \"/bin\")\n\
+  (subpath \"/sbin\")\n\
+  (subpath \"/Library\")\n\
+  (subpath \"/Applications\")\n\
+  (subpath \"/etc\")\n\
+  (subpath \"/private/etc\"))\n";
+    std::fs::write(&path, profile).ok()?;
+    Some(path)
+}
+
+// Build the launch command for an agent binary. When `isolate` is set, the process is launched
+// inside a host sandbox (macOS Seatbelt via sandbox-exec; Windows restricted token is a follow-up).
+// On Windows, .cmd/.bat shims can't be executed directly by CreateProcess, so wrap them in `cmd /c`.
+pub fn agent_command(bin: &str, isolate: bool) -> CommandBuilder {
+    #[cfg(target_os = "macos")]
+    if isolate {
+        if let Some(profile) = sandbox_profile_path() {
+            // sandbox-exec runs `bin` (plus any args term_open appends) under the profile.
+            let mut c = CommandBuilder::new("sandbox-exec");
+            c.arg("-f");
+            c.arg(profile);
+            c.arg(bin);
+            return c;
+        }
+    }
     #[cfg(windows)]
     {
+        let _ = isolate; // Windows host isolation (restricted token / AppContainer) — follow-up.
         let lower = bin.to_ascii_lowercase();
         if lower.ends_with(".cmd") || lower.ends_with(".bat") {
             let mut c = CommandBuilder::new("cmd.exe");
@@ -232,6 +272,10 @@ pub fn agent_command(bin: &str) -> CommandBuilder {
             c.arg(bin);
             return c;
         }
+    }
+    #[cfg(not(any(target_os = "macos", windows)))]
+    {
+        let _ = isolate;
     }
     CommandBuilder::new(bin)
 }

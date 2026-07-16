@@ -279,5 +279,62 @@ export const DETECTORS = [
     mode: "warn",
     hint: "Looks like a card security code (PCI data).",
     patterns: [/\b(cvv2?|cvc2?|security code|card verification)\s*(no\.?|#|:)?\s*\d{3,4}\b/i]
+  },
+  {
+    // #46 — changing security settings / IAM / firewall (human-approval action).
+    detectorId: "action-security-config",
+    threatId: 46,
+    stage: "prompt",
+    mode: "warn",
+    hint: "Asks to change security, IAM, or firewall settings — should require approval.",
+    patterns: [
+      /\b(disable|turn off|stop)\b.{0,20}\b(firewall|ufw|firewalld|windows defender|real[- ]?time protection|gatekeeper|\bSIP\b)\b/i,
+      /\bufw\s+disable\b|netsh\s+advfirewall.*\boff\b|Set-MpPreference\s+-Disable|csrutil\s+disable|spctl\s+--master-disable/i,
+      /\b(iam|role|policy)\b.{0,40}\b(AdministratorAccess|full[- ]?access|\*:\*|grant all|attach.*policy)\b/i,
+      /\b(0\.0\.0\.0\/0|::\/0)\b.{0,25}\b(ingress|inbound|security ?group|allow)\b/i,
+      /\bchmod\s+777\b|add\b.{0,15}\bsudoers\b|\baws\s+iam\b|\baz\s+role\s+assignment\b|gcloud\s+(iam|projects add-iam)/i
+    ]
+  },
+  {
+    // #47 — sending external email / notifications (human-approval action).
+    detectorId: "action-external-comms",
+    threatId: 47,
+    stage: "prompt",
+    mode: "warn",
+    hint: "Asks to send an external email / message / notification — should require approval.",
+    patterns: [
+      /\bsend\b.{0,20}\b(email|e-mail|sms|text message|notification|message)\b.{0,15}\bto\b/i,
+      /\b(smtp|sendgrid|mailgun|postmark|nodemailer|twilio)\b|ses\.(send|SendEmail)/i,
+      /hooks\.slack\.com|discord(app)?\.com\/api\/webhooks|chat\.googleapis\.com/i,
+      /\b(sendmail|mailx|mail)\s+-s\b/i
+    ]
+  },
+  {
+    // #48 — creating users / tokens / API keys (human-approval action).
+    detectorId: "action-credential-create",
+    threatId: 48,
+    stage: "prompt",
+    mode: "warn",
+    hint: "Asks to create a user, token, or API key — should require approval.",
+    patterns: [
+      /\b(create|add|provision|generate|mint|issue)\b.{0,25}\b(service account|api[- ]?key|access[- ]?key|personal access token|oauth client|client secret|credential)\b/i,
+      /\baws\s+iam\s+create-(access-key|user)\b|gcloud\s+iam\s+service-accounts\s+keys?\s+create/i,
+      /\b(adduser|useradd|New-LocalUser)\b|net\s+user\s+\S+\s+\/add/i,
+      /\bssh-keygen\b|openssl\s+genrsa\b/i
+    ]
+  },
+  {
+    // #49 — deploying to production (human-approval action).
+    detectorId: "action-prod-deploy",
+    threatId: 49,
+    stage: "prompt",
+    mode: "warn",
+    hint: "Asks to deploy or release to production — should require approval.",
+    patterns: [
+      /\b(deploy|release|ship|promote|roll ?out)\b.{0,25}\b(to\s+)?(prod|production|live)\b/i,
+      /\bterraform\s+apply\b|kubectl\s+apply\b.{0,45}\b(prod|production)\b|helm\s+(install|upgrade)\b.{0,45}\bprod/i,
+      /\bvercel\b.{0,15}--prod\b|\bfirebase\s+deploy\b|\bnpm\s+publish\b|serverless\s+deploy\b.{0,20}(prod|production)/i,
+      /\bgit\s+push\b.{0,20}\b(prod|production|release)\b|docker\s+push\b.{0,45}(prod|production|:latest)\b/i
+    ]
   }
 ];
