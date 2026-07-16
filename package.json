@@ -1,6 +1,6 @@
 {
   "name": "curaiq",
-  "version": "0.17.0",
+  "version": "0.17.1",
   "description": "CuraIQ agent — on-device guardrails for AI coding agents (community edition, AGPL-3.0)",
   "type": "module",
   "scripts": {
