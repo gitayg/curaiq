@@ -1,0 +1,40 @@
+name: windows-check
+
+# Native Windows compile-check for the Rust host (src-tauri). The app depends on C crates
+# (ring/TLS) and Windows-only modules (winsec.rs — WMI/registry posture + Job Object isolation)
+# that can't be cross-compiled or validated from macOS, so this runs `cargo check` on a real
+# windows-latest runner for every push and PR. Fast feedback without producing an installer;
+# the tagged release build lives in release-windows.yml.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Install dependencies
+        run: npm ci
+
+      # tauri-build embeds the frontend at compile time, so the staged dist must exist for `cargo
+      # check` to succeed (same step the release build runs via beforeBuildCommand).
+      - name: Stage frontend
+        run: node scripts/stage-frontend.mjs
+
+      - name: cargo check (native Windows)
+        run: cargo check --manifest-path src-tauri/Cargo.toml

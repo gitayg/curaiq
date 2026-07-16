@@ -1,6 +1,6 @@
 [package]
 name = "curaiq"
-version = "0.16.0"
+version = "0.17.0"
 description = "CuraIQ Managed AI Host"
 edition = "2021"
 
@@ -20,6 +20,7 @@ reqwest = { version = "0.13", features = ["blocking", "json", "query"] }
 [target.'cfg(windows)'.dependencies]
 wmi = "0.14"
 winreg = "0.52"
+windows = { version = "0.59", features = ["Win32_System_JobObjects", "Win32_System_Threading", "Win32_Foundation"] }
 
 [lib]
 name = "curaiq_lib"

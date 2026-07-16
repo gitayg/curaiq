@@ -195,3 +195,59 @@ pub fn patch_status() -> serde_json::Value {
         "latestHotfix": latest_hotfix
     })
 }
+
+// --- Opt-in host isolation: Job Objects ---
+//
+// Places the spawned agent process in a Windows Job Object configured with
+// JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE. When the host drops the job handle (app exit, or the next
+// session replacing it), every process in the job is terminated — so a killed/closed session can
+// never leave an orphaned agent (or its child tool processes) running unsupervised. This is the
+// first, safest isolation increment; tighter AppContainer filesystem/network limits layer on top of
+// the same job later. All functions degrade to a no-op on any error so isolation failure never
+// blocks launching the agent.
+
+/// Create a Job Object with kill-on-close semantics. Returns the raw handle as `isize`, or `None`.
+pub fn create_agent_job() -> Option<isize> {
+    use windows::core::PCWSTR;
+    use windows::Win32::System::JobObjects::{
+        CreateJobObjectW, SetInformationJobObject, JobObjectExtendedLimitInformation,
+        JOBOBJECT_EXTENDED_LIMIT_INFORMATION, JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
+    };
+    unsafe {
+        let job = CreateJobObjectW(None, PCWSTR::null()).ok()?;
+        let mut info = JOBOBJECT_EXTENDED_LIMIT_INFORMATION::default();
+        info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+        let _ = SetInformationJobObject(
+            job,
+            JobObjectExtendedLimitInformation,
+            &info as *const _ as *const core::ffi::c_void,
+            core::mem::size_of::<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>() as u32,
+        );
+        Some(job.0 as isize)
+    }
+}
+
+/// Assign a running process (by PID) to the job. Returns whether assignment succeeded.
+pub fn assign_process(job: isize, pid: u32) -> bool {
+    use windows::Win32::Foundation::{CloseHandle, HANDLE};
+    use windows::Win32::System::JobObjects::AssignProcessToJobObject;
+    use windows::Win32::System::Threading::{OpenProcess, PROCESS_SET_QUOTA, PROCESS_TERMINATE};
+    unsafe {
+        let hproc = match OpenProcess(PROCESS_SET_QUOTA | PROCESS_TERMINATE, false, pid) {
+            Ok(h) => h,
+            Err(_) => return false,
+        };
+        let ok =
+            AssignProcessToJobObject(HANDLE(job as *mut core::ffi::c_void), hproc).is_ok();
+        let _ = CloseHandle(hproc);
+        ok
+    }
+}
+
+/// Close a job handle. With kill-on-close set, this terminates every process still in the job.
+pub fn close_job(job: isize) {
+    use windows::Win32::Foundation::{CloseHandle, HANDLE};
+    unsafe {
+        let _ = CloseHandle(HANDLE(job as *mut core::ffi::c_void));
+    }
+}

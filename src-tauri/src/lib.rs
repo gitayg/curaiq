@@ -15,6 +15,11 @@ use tauri_plugin_updater::UpdaterExt;
 struct Term {
     writer: Mutex<Option<Box<dyn Write + Send>>>,
     master: Mutex<Option<Box<dyn MasterPty + Send>>>,
+    // Windows opt-in isolation: raw Job Object handle for the live agent process. Held so its
+    // kill-on-close limit stays active for the session's lifetime; replaced/closed on next launch.
+    // Unused on non-Windows targets, where isolation goes through the Seatbelt profile instead.
+    #[allow(dead_code)]
+    job: Mutex<Option<isize>>,
 }
 
 #[tauri::command]
@@ -75,9 +80,23 @@ fn term_open(app: tauri::AppHandle, state: tauri::State<Term>, cols: u16, rows: 
         _ => {}
     }
 
-    let mut child = pair.slave.spawn_command(cmd).map_err(|e| e.to_string())?;
+    let child = pair.slave.spawn_command(cmd).map_err(|e| e.to_string())?;
     set_config_bool("hadSession", true);
     drop(pair.slave);
+    // Windows opt-in host isolation: place the agent in a kill-on-close Job Object so a closed or
+    // killed session leaves no orphaned agent processes. Close any prior session's job first. macOS
+    // isolation is handled up front by wrapping the command in a Seatbelt sandbox (see platform.rs).
+    #[cfg(windows)]
+    {
+        if let Some(old) = state.job.lock().unwrap().take() { winsec::close_job(old); }
+        if isolate {
+            if let (Some(pid), Some(job)) = (child.process_id(), winsec::create_agent_job()) {
+                winsec::assign_process(job, pid);
+                *state.job.lock().unwrap() = Some(job);
+            }
+        }
+    }
+    let mut child = child;
     let mut reader = pair.master.try_clone_reader().map_err(|e| e.to_string())?;
     *state.writer.lock().unwrap() = Some(pair.master.take_writer().map_err(|e| e.to_string())?);
     *state.master.lock().unwrap() = Some(pair.master);
