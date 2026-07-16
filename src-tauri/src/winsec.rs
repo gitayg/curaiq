@@ -207,22 +207,61 @@ pub fn patch_status() -> serde_json::Value {
 // blocks launching the agent.
 
 /// Create a Job Object with kill-on-close semantics. Returns the raw handle as `isize`, or `None`.
+/// Far above any legitimate build (parallel compilers, test runners, npm) but still a hard ceiling
+/// on a runaway or malicious fork bomb, which spawns thousands.
+const AGENT_ACTIVE_PROCESS_LIMIT: u32 = 256;
+
 pub fn create_agent_job() -> Option<isize> {
     use windows::core::PCWSTR;
     use windows::Win32::System::JobObjects::{
-        CreateJobObjectW, SetInformationJobObject, JobObjectExtendedLimitInformation,
-        JOBOBJECT_EXTENDED_LIMIT_INFORMATION, JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
+        CreateJobObjectW, SetInformationJobObject, JobObjectBasicUIRestrictions,
+        JobObjectExtendedLimitInformation, JOBOBJECT_BASIC_UI_RESTRICTIONS,
+        JOBOBJECT_EXTENDED_LIMIT_INFORMATION, JOB_OBJECT_LIMIT_ACTIVE_PROCESS,
+        JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE, JOB_OBJECT_UILIMIT_DESKTOP,
+        JOB_OBJECT_UILIMIT_DISPLAYSETTINGS, JOB_OBJECT_UILIMIT_EXITWINDOWS,
+        JOB_OBJECT_UILIMIT_GLOBALATOMS, JOB_OBJECT_UILIMIT_HANDLES,
+        JOB_OBJECT_UILIMIT_READCLIPBOARD, JOB_OBJECT_UILIMIT_SYSTEMPARAMETERS,
+        JOB_OBJECT_UILIMIT_WRITECLIPBOARD,
     };
     unsafe {
         let job = CreateJobObjectW(None, PCWSTR::null()).ok()?;
+
+        // Note the flags deliberately NOT set: JOB_OBJECT_LIMIT_BREAKAWAY_OK and
+        // SILENT_BREAKAWAY. Without them a child calling CreateProcess with
+        // CREATE_BREAKAWAY_FROM_JOB fails, so the agent cannot spawn a helper outside the job to
+        // survive session close or escape these limits.
         let mut info = JOBOBJECT_EXTENDED_LIMIT_INFORMATION::default();
-        info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+        info.BasicLimitInformation.LimitFlags =
+            JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE | JOB_OBJECT_LIMIT_ACTIVE_PROCESS;
+        info.BasicLimitInformation.ActiveProcessLimit = AGENT_ACTIVE_PROCESS_LIMIT;
         let _ = SetInformationJobObject(
             job,
             JobObjectExtendedLimitInformation,
             &info as *const _ as *const core::ffi::c_void,
             core::mem::size_of::<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>() as u32,
         );
+
+        // Clipboard denial is the load-bearing one: the user's clipboard routinely holds passwords
+        // and tokens, and an agent that can read it has a silent exfil channel that never touches
+        // the filesystem or a prompt we scan. The rest deny the job a route to the wider desktop
+        // session. Safe for a console agent, which uses pipes rather than USER handles.
+        let ui = JOBOBJECT_BASIC_UI_RESTRICTIONS {
+            UIRestrictionsClass: JOB_OBJECT_UILIMIT_READCLIPBOARD
+                | JOB_OBJECT_UILIMIT_WRITECLIPBOARD
+                | JOB_OBJECT_UILIMIT_HANDLES
+                | JOB_OBJECT_UILIMIT_DESKTOP
+                | JOB_OBJECT_UILIMIT_EXITWINDOWS
+                | JOB_OBJECT_UILIMIT_GLOBALATOMS
+                | JOB_OBJECT_UILIMIT_DISPLAYSETTINGS
+                | JOB_OBJECT_UILIMIT_SYSTEMPARAMETERS,
+        };
+        let _ = SetInformationJobObject(
+            job,
+            JobObjectBasicUIRestrictions,
+            &ui as *const _ as *const core::ffi::c_void,
+            core::mem::size_of::<JOBOBJECT_BASIC_UI_RESTRICTIONS>() as u32,
+        );
+
         Some(job.0 as isize)
     }
 }
