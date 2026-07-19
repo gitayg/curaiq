@@ -5,7 +5,7 @@ import { TIER_OF } from "../data/data-tiers.js";
 import { APPROVAL_THREATS } from "../data/human-approval.js";
 import { DetectionEngine } from "./engine.js";
 import { Audit } from "./audit.js";
-import { getPolicy, postAlert, nativeLog, loadIdentity, enroll, serverBase, currentTenant, setAgentAuth, getAuthMethod, setAuthMethod, openUrl, reportDevice, reportPatches, reportPrompt, appVersion, checkUpdate, restartApp, checkAndInstallUpdate, reportIdentity, aboutInfo } from "./api.js";
+import { getPolicy, postAlert, nativeLog, loadIdentity, enroll, serverBase, currentTenant, setAgentAuth, getAuthMethod, setAuthMethod, openUrl, reportDevice, reportPatches, reportPrompt, appVersion, checkUpdate, restartApp, checkAndInstallUpdate, reportIdentity, aboutInfo, ocrImage } from "./api.js";
 import { BUILD } from "./buildinfo.js";
 
 // Which agent CLI the user is driving. Constrained to the admin's per-policy allow-list.
@@ -544,13 +544,43 @@ async function handleFile(file, source) {
       review.appendChild(act);
     }
   } else if ((file.type || "").startsWith("image/")) {
+    // #23 — if the tenant enabled image inspection (BYO vision key), OCR the image server-side and
+    // run the extracted text through the SAME PII/secret policy as any file. The vision key stays on
+    // the server; only text comes back. Falls back to the informational card when disabled/unavailable.
     const note = document.createElement("div");
     note.className = "card coach";
-    note.innerHTML = `<div class="top"><span class="chip lvl coach">Image</span><span class="name">Image ${esc(source)}</span></div>
-      <div class="hint">Image content is not inspected by Tier-1 rules — needs a vision/OCR tier. Upload event logged.</div>`;
+    note.innerHTML = `<div class="top"><span class="chip lvl coach">Image</span><span class="name">Image ${esc(source)}</span></div><div class="hint"></div>`;
     review.appendChild(note);
+    const hint = note.querySelector(".hint");
+    if (policy?.imageInspection?.enabled && (file.size || 0) <= 4 * 1024 * 1024) {
+      hint.textContent = "Extracting text (OCR) to scan for secrets & PII…";
+      try {
+        const text = (await ocrImage(await fileToBase64(file), file.type)).slice(0, 200000);
+        if (text.trim()) {
+          hint.textContent = "OCR text scanned against policy.";
+          const cb = reviewContent(text, "shared", review);
+          const fb = renderFindings(text, "file", review);
+          if (cb || fb) banner(review, "✗ Blocked by policy — image not shared with the agent.", "block");
+          else banner(review, "✓ OCR clean — no secrets or PII found in the image.", "clean");
+        } else { hint.textContent = "OCR found no readable text in the image. Upload event logged."; }
+      } catch (e) { hint.textContent = `Couldn't inspect the image (${e.message}). Upload event logged.`; }
+    } else {
+      hint.textContent = (file.size || 0) > 4 * 1024 * 1024
+        ? "Image too large to inspect (over 4MB). Upload event logged."
+        : "Image content is not inspected — enable image inspection (BYO vision key) in your policy. Upload event logged.";
+    }
   }
   renderLog();
+}
+
+// Read a File as base64 (no data-URL prefix) for the OCR endpoint.
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result).replace(/^data:[^;]+;base64,/, ""));
+    r.onerror = () => reject(new Error("read failed"));
+    r.readAsDataURL(file);
+  });
 }
 
 function wireDropAndPaste() {
