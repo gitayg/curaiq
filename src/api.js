@@ -161,7 +161,9 @@ export async function reportDevice() {
     try { const p = await invoke("device_posture"); if (p && Object.keys(p).length) posture = p; } catch {}
     let accounts = [];
     try { accounts = (await invoke("device_accounts")).accounts || []; } catch {}
-    const full = { ...dev, browsers, mcp, posture, accounts };
+    let aiAssets = null; // #7 — models/providers + local models (config metadata only)
+    try { aiAssets = await invoke("device_ai_assets"); } catch {}
+    const full = { ...dev, browsers, mcp, posture, accounts, aiAssets };
     fetch(`${BASE}/api/device-report`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Client-Id": CLIENT_ID, "X-Install-Token": installTok() },

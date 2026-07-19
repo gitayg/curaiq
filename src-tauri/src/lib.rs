@@ -273,6 +273,56 @@ fn open_url(url: String) -> Result<(), String> {
 #[tauri::command]
 fn device_ai_tools() -> serde_json::Value { platform::ai_tools() }
 
+// Minimal `key = "value"` (TOML) / `key: value` (YAML) scan — tolerant, no crate. `sep` is '=' or ':'.
+fn cfg_val(txt: &str, key: &str, sep: char) -> Option<String> {
+    for line in txt.lines() {
+        let l = line.trim();
+        if let Some(rest) = l.strip_prefix(key) {
+            if let Some(v) = rest.trim_start().strip_prefix(sep) {
+                let v = v.trim().trim_matches('"').trim_matches('\'').trim().to_string();
+                if !v.is_empty() { return Some(v); }
+            }
+        }
+    }
+    None
+}
+
+// #7 — AI asset inventory: which models/providers each agent is configured for, plus local models on
+// disk. Config metadata only (default-model strings; local-model directory NAMES) — never token/auth
+// files. Feeds the console's per-device + fleet AI-asset catalog.
+#[tauri::command]
+fn device_ai_assets() -> serde_json::Value {
+    let home = platform::home_dir();
+    let mut providers: Vec<serde_json::Value> = vec![];
+    // Claude Code — ~/.claude/settings.json { model }
+    if let Ok(txt) = std::fs::read_to_string(format!("{home}/.claude/settings.json")) {
+        if let Ok(j) = serde_json::from_str::<serde_json::Value>(&txt) {
+            let model = j.get("model").and_then(|v| v.as_str()).map(|s| s.to_string());
+            providers.push(serde_json::json!({ "provider": "Anthropic", "agent": "claude", "model": model, "source": "settings.json" }));
+        }
+    }
+    // Codex — ~/.codex/config.toml (model, model_provider)
+    if let Ok(txt) = std::fs::read_to_string(format!("{home}/.codex/config.toml")) {
+        let prov = cfg_val(&txt, "model_provider", '=').unwrap_or_else(|| "OpenAI".into());
+        providers.push(serde_json::json!({ "provider": prov, "agent": "codex", "model": cfg_val(&txt, "model", '='), "source": "config.toml" }));
+    }
+    // Aider — ~/.aider.conf.yml (model:)
+    if let Ok(txt) = std::fs::read_to_string(format!("{home}/.aider.conf.yml")) {
+        providers.push(serde_json::json!({ "provider": "Aider", "agent": "aider", "model": cfg_val(&txt, "model", ':'), "source": "aider.conf.yml" }));
+    }
+    // Local models — Ollama + LM Studio directory names only (no file contents).
+    let mut local: Vec<serde_json::Value> = vec![];
+    if let Ok(rd) = std::fs::read_dir(format!("{home}/.ollama/models/manifests/registry.ollama.ai/library")) {
+        for e in rd.flatten() { if let Some(n) = e.file_name().to_str() { local.push(serde_json::json!({ "runtime": "ollama", "name": n })); } }
+    }
+    for lmdir in [format!("{home}/.lmstudio/models"), format!("{home}/.cache/lm-studio/models")] {
+        if let Ok(rd) = std::fs::read_dir(&lmdir) {
+            for e in rd.flatten() { if e.path().is_dir() { if let Some(n) = e.file_name().to_str() { local.push(serde_json::json!({ "runtime": "lmstudio", "name": n })); } } }
+        }
+    }
+    serde_json::json!({ "providers": providers, "localModels": local })
+}
+
 // Inventories the MCP servers each coding agent has configured (the agent "posture/config" layer).
 // Reads well-known config files and reports only server names + scope + transport — never contents.
 // #16 — heuristic "tool-poisoning" risk for an MCP server's launch config. We can't read the
@@ -292,13 +342,38 @@ fn mcp_risk(cfg: &serde_json::Value) -> Option<&'static str> {
     None
 }
 
+// #8 — heuristic capability scope for an MCP server from its launch config: network, filesystem,
+// credential access. Advisory (like mcp_risk). Reads command/args and env var KEYS only — never env
+// values, honoring the no-credential-vault rule. The server scores level/reasons centrally.
+fn mcp_caps(cfg: &serde_json::Value) -> serde_json::Value {
+    let mut parts = String::new();
+    if let Some(c) = cfg.get("command").and_then(|v| v.as_str()) { parts.push_str(c); parts.push(' '); }
+    if let Some(args) = cfg.get("args").and_then(|v| v.as_array()) {
+        for a in args { if let Some(s) = a.as_str() { parts.push_str(s); parts.push(' '); } }
+    }
+    let p = parts.to_lowercase();
+    let remote = cfg.get("url").is_some()
+        || cfg.get("type").and_then(|v| v.as_str()) == Some("sse")
+        || cfg.get("transport").and_then(|v| v.as_str()) == Some("sse");
+    let net = remote || ["fetch", "brave-search", "puppeteer", "playwright", "firecrawl", "http"].iter().any(|k| p.contains(k));
+    let fs = p.contains("filesystem") || p.contains("server-files") || p.contains(" files ");
+    let mut cred = ["github", "gitlab", "slack", "aws", "gdrive", "google-drive", "notion", "stripe", "jira"].iter().any(|k| p.contains(k));
+    if let Some(env) = cfg.get("env").and_then(|v| v.as_object()) {
+        for k in env.keys() {
+            let ku = k.to_uppercase();
+            if ["TOKEN", "KEY", "SECRET", "PASSWORD", "CREDENTIAL"].iter().any(|s| ku.contains(s)) { cred = true; break; }
+        }
+    }
+    serde_json::json!({ "net": net, "fs": fs, "cred": cred })
+}
+
 fn mcp_collect(map: &serde_json::Map<String, serde_json::Value>, scope: &str, out: &mut Vec<serde_json::Value>, seen: &mut std::collections::HashSet<String>) {
     for (name, cfg) in map {
         if name.is_empty() || !seen.insert(format!("{scope}:{name}")) { continue; }
         let remote = cfg.get("url").is_some()
             || cfg.get("type").and_then(|v| v.as_str()) == Some("sse")
             || cfg.get("transport").and_then(|v| v.as_str()) == Some("sse");
-        let mut entry = serde_json::json!({ "name": name, "scope": scope, "transport": if remote { "remote" } else { "stdio" } });
+        let mut entry = serde_json::json!({ "name": name, "scope": scope, "transport": if remote { "remote" } else { "stdio" }, "caps": mcp_caps(cfg) });
         if let Some(reason) = mcp_risk(cfg) { entry["risk"] = serde_json::Value::String(reason.into()); }
         out.push(entry);
     }
@@ -468,7 +543,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(Term::default())
-        .invoke_handler(tauri::generate_handler![native_log, app_version, identity, run_agent, save_provision, set_agent_auth, open_url, open_login_terminal, restart_app, check_and_install_update, about_info, term_open, term_input, term_resize, device_ai_tools, device_mcp, os_patch_status, device_browsers, device_posture, device_accounts, dir_sensitive])
+        .invoke_handler(tauri::generate_handler![native_log, app_version, identity, run_agent, save_provision, set_agent_auth, open_url, open_login_terminal, restart_app, check_and_install_update, about_info, term_open, term_input, term_resize, device_ai_tools, device_ai_assets, device_mcp, os_patch_status, device_browsers, device_posture, device_accounts, dir_sensitive])
         .run(tauri::generate_context!())
         .expect("error while running CuraIQ");
 }
