@@ -3,9 +3,16 @@ const LEVEL_RANK = { Critical: 4, High: 3, Medium: 2, Low: 1 };
 export class DetectionEngine {
   constructor(threatData, detectors, contentRules = []) {
     this.sources = threatData.sources || {};
+    this._baseDetectors = detectors;
     this.detectors = detectors;
     this.contentRules = contentRules;
     this.threatsById = new Map(threatData.threats.map((t) => [t.id, t]));
+  }
+
+  // #22 — merge org-defined detector packs (already compiled) on top of the built-ins. Idempotent:
+  // re-applying replaces the previous packs rather than stacking, so a policy refresh stays clean.
+  applyPacks(compiled) {
+    this.detectors = compiled && compiled.length ? [...this._baseDetectors, ...compiled] : this._baseDetectors;
   }
 
   // Parental-control content review (profanity, sexual, violence, etc.) — separate from

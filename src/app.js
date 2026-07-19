@@ -1,4 +1,5 @@
 import { DETECTORS } from "../data/detectors.js";
+import { compilePacks } from "../data/detector-packs.js";
 import { CONTENT_RULES } from "../data/content-rules.js";
 import { TIER_OF } from "../data/data-tiers.js";
 import { APPROVAL_THREATS } from "../data/human-approval.js";
@@ -124,6 +125,8 @@ async function refreshPolicy() {
   if (p) policy = p;
   updateStatusbar(!!p);
   renderToolPicker();
+  // #22 — merge the admin's custom detector packs (distributed via policy) on top of the built-ins.
+  if (engine) engine.applyPacks(compilePacks(policy?.detectorPacks));
   // Cache the allow-list to config so the host can enforce (offline fallback) even if a later
   // policy fetch fails. The server remains authoritative when reachable.
   if (window.__TAURI__ && policy && Array.isArray(policy.allowedTools)) {
