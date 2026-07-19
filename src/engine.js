@@ -15,6 +15,16 @@ export class DetectionEngine {
     this.detectors = compiled && compiled.length ? [...this._baseDetectors, ...compiled] : this._baseDetectors;
   }
 
+  // #5 — a file's or index-payload's content is DLP-equivalent to a prompt, so "file" and "index"
+  // stages also run the "prompt" detectors (secrets/PII/injection). Without this, dropped files and
+  // OCR'd images were never threat-scanned. Prompt/output stay isolated.
+  _wantStages(stage) { return (stage === "file" || stage === "index") ? ["prompt", stage] : [stage]; }
+  _inStage(d, want) { return (d.stages || [d.stage]).some((s) => want.includes(s)); }
+
+  // #5 — scan content headed for a local vector store / RAG index before it's embedded. Single
+  // choke-point contract for a future embedding writer; today it's reachable via the file path.
+  scanForIndex(text) { return this.scan(text, "index"); }
+
   // Parental-control content review (profanity, sexual, violence, etc.) — separate from
   // the security threat scan. Returns matched content categories.
   scanContent(text, categories) {
@@ -40,9 +50,10 @@ export class DetectionEngine {
   scan(text, stage) {
     if (!text || !text.trim()) return [];
     const byThreat = new Map();
+    const want = this._wantStages(stage);
 
     for (const d of this.detectors) {
-      if (d.stages ? !d.stages.includes(stage) : d.stage !== stage) continue;
+      if (!this._inStage(d, want)) continue;
       const match = this._firstMatch(text, d.patterns);
       if (!match) continue;
 
@@ -116,8 +127,9 @@ export class DetectionEngine {
   // (contextual, not redactable). Used by the pre-flight guard before forwarding to the agent.
   redact(text, stage) {
     let out = text;
+    const want = this._wantStages(stage);
     for (const d of this.detectors) {
-      if ((d.stages ? !d.stages.includes(stage) : d.stage !== stage) || d.mode === "coach") continue;
+      if (!this._inStage(d, want) || d.mode === "coach") continue;
       for (const p of d.patterns) {
         const g = new RegExp(p.source, p.flags.includes("g") ? p.flags : p.flags + "g");
         out = out.replace(g, `[REDACTED:#${d.threatId}]`);

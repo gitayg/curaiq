@@ -12,6 +12,23 @@ export const DETECTORS = [
     patterns: INJECTION_I18N
   },
   {
+    // #5 — second-order / indirect injection: hidden instructions embedded in a document or pasted
+    // content that hijack the AI when it's later read (RAG poisoning / retrieval-triggered). Runs on
+    // the prompt stage and — via file/index stage-equivalence — on dropped files and OCR'd images.
+    detectorId: "idx-hidden-instructions",
+    threatId: 40,
+    stage: "prompt",
+    mode: "warn",
+    hint: "Contains hidden / second-order instructions that could hijack the AI when this content is read.",
+    patterns: [
+      /\b(when|once|if|after)\s+(you|the\s+(ai|assistant|agent|model|llm|system))\b[^.]{0,60}\b(ignore|disregard|instead|execute|run|fetch|send|exfiltrat|reveal|forward|email|upload)\b/i,
+      /<!--[^>]*\b(system|assistant|instruction|ignore|prompt)\b[^>]*-->/i,
+      /\b(system|assistant)\s+(prompt|message|instruction)s?\s*[:=]/i,
+      /\bnew\s+(instructions?|directives?|system\s+prompt)\b\s*[:=\-]/i,
+      /\bAI\s+(assistant|agent|model)\s*:\s*(ignore|from now|you\s+(are|must|will))/i
+    ]
+  },
+  {
     // Advisory: contract / legal language → recommend legal counsel (notify by default), logged to dashboard.
     detectorId: "legal-language",
     threatId: 41,
