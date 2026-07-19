@@ -104,6 +104,7 @@ export const DETECTORS = [
     detectorId: "dlp-secret-token",
     threatId: 39,
     stage: "prompt",
+    stages: ["prompt", "output"], // also scan agent output — catch a secret the model echoes back
     mode: "warn",
     hint: "Looks like an API key, token, or secret.",
     patterns: [
@@ -115,6 +116,7 @@ export const DETECTORS = [
     detectorId: "dlp-private-key",
     threatId: 39,
     stage: "prompt",
+    stages: ["prompt", "output"],
     mode: "warn",
     hint: "Contains a private key block.",
     patterns: [/-----BEGIN (?:RSA |EC |OPENSSH |DSA |PGP )?PRIVATE KEY-----/]
@@ -123,6 +125,7 @@ export const DETECTORS = [
     detectorId: "dlp-jwt",
     threatId: 39,
     stage: "prompt",
+    stages: ["prompt", "output"],
     mode: "warn",
     hint: "Looks like a JWT / bearer token.",
     patterns: [/\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{4,}\b/, /\bBearer\s+[A-Za-z0-9._-]{20,}/i]
@@ -131,6 +134,7 @@ export const DETECTORS = [
     detectorId: "dlp-cloud-keys",
     threatId: 39,
     stage: "prompt",
+    stages: ["prompt", "output"],
     mode: "warn",
     hint: "Looks like a cloud / vendor API key (Stripe, Google, OpenAI, etc.).",
     patterns: [

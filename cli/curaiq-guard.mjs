@@ -84,10 +84,28 @@ async function decide(decideFlag) {
 }
 
 function runClaude(prompt) {
+  // Output review/redaction (#4). The interactive TUI can't be masked safely (cursor/ANSI redraws),
+  // but `claude -p` is a one-shot reply — so here we capture stdout, scan it for anything the model
+  // surfaced (a secret echoed back, licensed code, a risky `curl | bash`, an unverifiable citation)
+  // and mask flagged secret spans before printing. Buffering means the reply prints once complete
+  // rather than token-by-token — an acceptable trade for the guarded print path. Opt out with
+  // policy.outputReview === false.
+  const review = policy?.outputReview !== false;
   return new Promise((resolve) => {
-    const child = spawn("claude", ["-p", prompt], { stdio: ["ignore", "inherit", "inherit"] });
+    const child = spawn("claude", ["-p", prompt], { stdio: ["ignore", review ? "pipe" : "inherit", "inherit"] });
     child.on("error", (e) => { console.error(`${C.red}failed to run claude:${C.off} ${e.message}`); resolve(1); });
-    child.on("close", (code) => resolve(code ?? 0));
+    if (!review) { child.on("close", (code) => resolve(code ?? 0)); return; }
+    let out = "";
+    child.stdout.on("data", (d) => { out += d.toString(); });
+    child.on("close", (code) => {
+      const flagged = engine.scan(out, "output").filter((f) => action(f) !== "disabled");
+      const visible = flagged.filter((f) => action(f) !== "alert");
+      if (visible.length) { console.error(`\n${C.org}⚠ CuraIQ output review — ${visible.length} finding(s) in the reply:${C.off}`); printFindings(visible); }
+      const mask = policy?.outputRedaction === true || flagged.some((f) => action(f) === "block" || action(f) === "justify");
+      if (mask) console.error(`${C.org}↻ masking flagged spans in the reply${C.off}`);
+      process.stdout.write(mask ? engine.redact(out, "output") : out);
+      resolve(code ?? 0);
+    });
   });
 }
 

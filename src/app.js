@@ -265,7 +265,7 @@ function initTerminal() {
     try { fit.fit(); } catch {}
     if (TAURI?.core?.invoke && TAURI?.event?.listen) {
       nativeTerm = true;
-      TAURI.event.listen("term-data", (e) => term.write(e.payload));
+      TAURI.event.listen("term-data", (e) => { term.write(e.payload); reviewOutput(e.payload); });
       TAURI.event.listen("term-exit", () => term.write(`\r\n\x1b[2m[CuraIQ] ${TOOL_LABELS[TOOL] || TOOL} exited.\x1b[0m\r\n`));
       TAURI.core.invoke("term_open", { cols: term.cols, rows: term.rows, tool: TOOL }).catch((e) => term.write(`\r\n[CuraIQ] ${e}\r\n`));
     } else {
@@ -322,7 +322,7 @@ function connectTerminal() {
   const token = localStorage.getItem("raiseme.agentToken") || "";
   sock = new WebSocket(`${proto}://${u.host}/ws?token=${encodeURIComponent(token)}`);
   sock.binaryType = "arraybuffer";
-  sock.onmessage = (e) => term.write(typeof e.data === "string" ? e.data : new Uint8Array(e.data));
+  sock.onmessage = (e) => { const d = typeof e.data === "string" ? e.data : new Uint8Array(e.data); term.write(d); if (typeof e.data === "string") reviewOutput(e.data); };
   sock.onopen = () => { lastCols = 0; lastRows = 0; pushSize(); };
   sock.onclose = () => term.write("\r\n\x1b[2m[CuraIQ] terminal disconnected.\x1b[0m\r\n");
 }
@@ -392,6 +392,31 @@ function renderFindings(text, stage, mount) {
     blocked = blocked || gate;
   }
   return blocked;
+}
+
+// AI output review (#4) — non-destructive. The reply streams through a full-screen TUI, so masking
+// it inline would corrupt the display; instead we watch a line-buffered, ANSI-stripped copy and raise
+// findings (a secret the model echoed back, licensed code, a risky command) into the same dashboard
+// pipeline as prompts — never altering what the terminal shows. Best-effort on a repainting TUI; the
+// clean redaction path is the `claude -p` guard. Opt out with policy.outputReview === false.
+const OUT_ANSI = /[\u001b\u009b][[\]()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g;
+let outBuf = "";
+function reviewOutput(chunk) {
+  if (policy?.outputReview === false || typeof chunk !== "string") return;
+  outBuf += chunk;
+  const nl = outBuf.lastIndexOf("\n");
+  if (nl < 0) { if (outBuf.length > 8192) outBuf = outBuf.slice(-4096); return; }
+  const text = outBuf.slice(0, nl).replace(OUT_ANSI, "");
+  outBuf = outBuf.slice(nl + 1);
+  if (!text.trim()) return;
+  let found = false;
+  for (const f of engine.scan(text, "output")) {
+    if (threatAction(f.threat.id) === "disabled") continue;
+    // Output is already on screen — record as a silent detection, never gate.
+    report(audit.record({ action: "alert", stage: "output", tool: TOOL, finding: f, content: f.match }, false));
+    found = true;
+  }
+  if (found) renderLog();
 }
 
 // Blocking findings in `text` (content rules + threats) as {match,label} — pure, no UI/audit.

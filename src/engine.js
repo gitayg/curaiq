@@ -35,7 +35,7 @@ export class DetectionEngine {
     const byThreat = new Map();
 
     for (const d of this.detectors) {
-      if (d.stage !== stage) continue;
+      if (d.stages ? !d.stages.includes(stage) : d.stage !== stage) continue;
       const match = this._firstMatch(text, d.patterns);
       if (!match) continue;
 
@@ -110,7 +110,7 @@ export class DetectionEngine {
   redact(text, stage) {
     let out = text;
     for (const d of this.detectors) {
-      if (d.stage !== stage || d.mode === "coach") continue;
+      if ((d.stages ? !d.stages.includes(stage) : d.stage !== stage) || d.mode === "coach") continue;
       for (const p of d.patterns) {
         const g = new RegExp(p.source, p.flags.includes("g") ? p.flags : p.flags + "g");
         out = out.replace(g, `[REDACTED:#${d.threatId}]`);
