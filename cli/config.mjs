@@ -9,10 +9,13 @@ export function loadConfig() {
     serverUrl: process.env.CuraIQ_SERVER || "http://localhost:8787",
     tenant: process.env.CuraIQ_TENANT || "unprovisioned"
   };
-  try {
-    const c = JSON.parse(readFileSync(join(homedir(), ".raiseme", "config.json"), "utf8"));
-    return { serverUrl: c.serverUrl || fallback.serverUrl, tenant: c.tenant || fallback.tenant };
-  } catch {
-    return fallback;
+  // The Rust host writes ~/.curaiq/config.json; older installs used ~/.raiseme. Prefer the former,
+  // fall back to the latter, then to env/localhost.
+  for (const dir of [".curaiq", ".raiseme"]) {
+    try {
+      const c = JSON.parse(readFileSync(join(homedir(), dir, "config.json"), "utf8"));
+      return { serverUrl: c.serverUrl || fallback.serverUrl, tenant: c.tenant || fallback.tenant, installToken: c.installToken || "" };
+    } catch { /* try next */ }
   }
+  return fallback;
 }
