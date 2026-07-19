@@ -1,4 +1,5 @@
 import { INJECTION_I18N } from "./injection-i18n.js";
+import { SECRET_DETECTORS } from "./secrets-patterns.js";
 
 export const DETECTORS = [
   {
@@ -117,18 +118,9 @@ export const DETECTORS = [
     hint: "Looks like an IBAN / bank account.",
     patterns: [/\b[A-Z]{2}\d{2}[A-Z0-9]{10,30}\b/]
   },
-  {
-    detectorId: "dlp-secret-token",
-    threatId: 39,
-    stage: "prompt",
-    stages: ["prompt", "output"], // also scan agent output — catch a secret the model echoes back
-    mode: "warn",
-    hint: "Looks like an API key, token, or secret.",
-    patterns: [
-      /\b(sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|xox[baprs]-[A-Za-z0-9-]{10,})\b/,
-      /\b(password|api[_ -]?key|secret|client[_ -]?secret|access[_ -]?token)\b\s*[:=]/i
-    ]
-  },
+  // #7 — battle-tested secrets engine: broad prefix-anchored provider tokens + entropy-gated shapeless
+  // detectors (see data/secrets-patterns.js). All map to threat #39 (deduped by threatId).
+  ...SECRET_DETECTORS,
   {
     detectorId: "dlp-private-key",
     threatId: 39,
@@ -146,20 +138,6 @@ export const DETECTORS = [
     mode: "warn",
     hint: "Looks like a JWT / bearer token.",
     patterns: [/\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{4,}\b/, /\bBearer\s+[A-Za-z0-9._-]{20,}/i]
-  },
-  {
-    detectorId: "dlp-cloud-keys",
-    threatId: 39,
-    stage: "prompt",
-    stages: ["prompt", "output"],
-    mode: "warn",
-    hint: "Looks like a cloud / vendor API key (Stripe, Google, OpenAI, etc.).",
-    patterns: [
-      /\b(sk|pk|rk)_(live|test)_[A-Za-z0-9]{16,}\b/,
-      /\bAIza[0-9A-Za-z_-]{35}\b/,
-      /\bsk-(proj-)?[A-Za-z0-9_-]{20,}\b/,
-      /\bglpat-[A-Za-z0-9_-]{20,}\b/
-    ]
   },
   {
     detectorId: "dlp-phone",

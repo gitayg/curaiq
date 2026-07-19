@@ -54,7 +54,7 @@ export class DetectionEngine {
 
     for (const d of this.detectors) {
       if (!this._inStage(d, want)) continue;
-      const match = this._firstMatch(text, d.patterns);
+      const match = this._matchDetector(text, d);
       if (!match) continue;
 
       const threat = this.threat(d.threatId);
@@ -132,7 +132,9 @@ export class DetectionEngine {
       if (!this._inStage(d, want) || d.mode === "coach") continue;
       for (const p of d.patterns) {
         const g = new RegExp(p.source, p.flags.includes("g") ? p.flags : p.flags + "g");
-        out = out.replace(g, `[REDACTED:#${d.threatId}]`);
+        // Honor refine so an entropy-gated detector never over-redacts a benign long string — scan
+        // and redact must agree on what's a secret.
+        out = out.replace(g, (m) => (d.refine && !d.refine(m)) ? m : `[REDACTED:#${d.threatId}]`);
       }
     }
     return out;
@@ -142,6 +144,22 @@ export class DetectionEngine {
     for (const p of patterns) {
       const m = text.match(p);
       if (m) return m[0];
+    }
+    return null;
+  }
+
+  // #7 — like _firstMatch, but if the detector has a `refine(match)` predicate (entropy/allowlist
+  // gate for shapeless secrets), keep scanning occurrences until one passes. No refine → identical to
+  // _firstMatch, so existing detectors are unaffected.
+  _matchDetector(text, d) {
+    if (!d.refine) return this._firstMatch(text, d.patterns);
+    for (const p of d.patterns) {
+      const g = new RegExp(p.source, p.flags.includes("g") ? p.flags : p.flags + "g");
+      let m;
+      while ((m = g.exec(text)) !== null) {
+        if (d.refine(m[0])) return m[0];
+        if (m.index === g.lastIndex) g.lastIndex++; // guard against zero-width matches
+      }
     }
     return null;
   }
