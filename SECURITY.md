@@ -15,15 +15,15 @@ give a reasonable window to remediate before any public disclosure.
 
 ## Scope
 
-In scope: the CuraIQ native host, the management server, the CLI guard, and the detection engine.
+In scope: the MoorAI native host, the management server, the CLI guard, and the detection engine.
 
-Out of scope: third-party agents CuraIQ launches (Claude Code, Codex, Copilot CLI) — report those
-to their respective vendors. Note that CuraIQ's on-device policy is **governance, not a sandbox**:
-a user in control of their own machine can run an agent outside CuraIQ entirely. That's a known
+Out of scope: third-party agents MoorAI launches (Claude Code, Codex, Copilot CLI) — report those
+to their respective vendors. Note that MoorAI's on-device policy is **governance, not a sandbox**:
+a user in control of their own machine can run an agent outside MoorAI entirely. That's a known
 limitation, not a vulnerability.
 
 ## Handling of secrets
 
-CuraIQ keeps all credentials in environment variables, never in source. Prompt/response content is
+MoorAI keeps all credentials in environment variables, never in source. Prompt/response content is
 reviewed on-device and never transmitted or stored server-side — only redacted metadata is. Reports
 of either invariant being broken are treated as high severity.

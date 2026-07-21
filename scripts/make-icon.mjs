@@ -1,7 +1,7 @@
 import { deflateSync } from "node:zlib";
 import { writeFileSync } from "node:fs";
 
-// Dependency-free PNG writer — a dark tile with an accent "shield" diamond (CuraIQ mark).
+// Dependency-free PNG writer — a dark tile with an accent "shield" diamond (MoorAI mark).
 const S = 1024;
 const bg = [14, 17, 22, 255];
 const accent = [76, 141, 255, 255];

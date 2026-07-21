@@ -32,13 +32,13 @@ npx tauri build --bundles app,dmg
 The hardened runtime + `entitlements.plist` are applied automatically. Verify:
 
 ```bash
-codesign -dv --verbose=2 "src-tauri/target/release/bundle/macos/CuraIQ.app"   # Authority=Developer ID …
-xcrun stapler validate "src-tauri/target/release/bundle/dmg/CuraIQ_0.8.16_aarch64.dmg"
+codesign -dv --verbose=2 "src-tauri/target/release/bundle/macos/MoorAI.app"   # Authority=Developer ID …
+xcrun stapler validate "src-tauri/target/release/bundle/dmg/MoorAI_0.8.16_aarch64.dmg"
 ```
 
 A notarized, stapled DMG opens with **no Gatekeeper warning**.
 
 ## Publish
 
-Copy the notarized DMG to `dist/CuraIQ.dmg`; the server serves it from
+Copy the notarized DMG to `dist/MoorAI.dmg`; the server serves it from
 `/download/app`. (CI can do this on a version tag.)

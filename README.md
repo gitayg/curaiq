@@ -1,83 +1,85 @@
-# CuraIQ
+<div align="center">
 
-**On-device guardrails for AI coding agents.** CuraIQ is a thin managed layer between your
-people and the AI agents they run (Claude Code, Codex, GitHub Copilot CLI). Every prompt is
-reviewed **locally, before it reaches the agent** — coach, alert, or block by policy — and your
-security team gets **redacted, content-free** signals, never the actual conversations.
+# MoorAI
 
-[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
-![Platform: macOS | Windows](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)
+### On-device guardrails for AI coding agents. Nothing leaves the machine.
 
-**🌐 [curaiq.glick.run — hosted console](https://curaiq.glick.run) · 📄 [Overview & docs on glick.run](https://glick.run/curaiq.html)**
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-ff4d6d.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-e4e4ef.svg)](#install)
+[![Build: Windows](https://github.com/gitayg/curaiq/actions/workflows/release-windows.yml/badge.svg)](https://github.com/gitayg/curaiq/actions)
 
-> This repo is the **community agent** — it runs standalone with **local policy control**, no
-> account required. Centralized fleet management (multi-tenant console, SSO, compliance reporting)
-> is provided by a **separate, proprietary** CuraIQ management server — sign in or create an account
-> at **[curaiq.glick.run](https://curaiq.glick.run)**.
+**MoorAI reviews what your developers send to AI coding agents — and what those agents read, run, and reply — right on the device, before anything is exposed.** Secrets, PII, and source code never leave the machine to be checked. Your security team sees content-free signals, never the prompts.
+
+Let your engineers use AI freely. Keep your data in-house.
+
+</div>
+
+---
+
+## The problem
+
+Your developers use Claude Code, Cursor, and Copilot. Those agents don't just read what's typed — they **read files into context** (a stray `.env`), **call MCP tools** with whatever arguments they were given, and **reply** with whatever the model generates. Prompt review alone misses most of it, and every cloud DLP tool solves it by **sending your prompts to their servers to inspect**.
+
+That's the exact trade MoorAI refuses.
+
+## What it does
+
+- **Context interception** — blocks a secret or PII being *read into the agent's context* (e.g. an agent slurping a `.env`), not just typed in a prompt. Via the agent's PreToolUse hooks, on-device.
+- **MCP tool-call interception** — inspects `mcp__*` tool-call arguments for secrets/policy violations and blocks them; enforces an approved-MCP-server allow-list at call time.
+- **AI output review** — reviews what the agent says *back*, not just what's typed. Masks secret spans the model echoes on the `-p` path.
+- **Battle-tested secrets engine** — ~14 provider families (GitHub, AWS, Stripe, Slack, GCP, OpenAI/Anthropic, DB connection strings, …) plus Shannon-entropy scoring with an allowlist (UUIDs, git SHAs, base64) so it doesn't false-positive on the things that aren't secrets.
+- **Coach · alert · block · justify** — per policy, per tenant, per device. Nudge, warn, hard-block, or require a signed justification.
+- **On-device, content-free** — everything is checked locally. The console receives a category, a risk level, and a one-way hash — **never** the prompt, the file, or the matched span.
+
+## Why you can trust the "nothing leaves" claim
+
+Because you can read the code. The agent is **AGPL-3.0 and open source** — the whole detection and reporting path is right here. Cloud DLP tools ask you to take "we don't store your prompts" on faith. MoorAI's telemetry is content-free *by construction*, and the construction is auditable.
+
+**Governance without surveillance.**
+
+## Install
+
+**macOS** — download the signed, notarized `.dmg` from [Releases](https://github.com/gitayg/curaiq/releases).
+**Windows** — download the signed `-setup.exe` from [Releases](https://github.com/gitayg/curaiq/releases) (built in the open by CI).
+
+Community edition: runs standalone, local policy control, no account required.
+
+### Try the CLI guard in 30 seconds
+
+```bash
+npm run guard -- "here is my key sk-ant-api03-... please debug the charge"
+# ✗ blocked by policy — nothing sent to claude -p (#39 secret)
+```
+
+### Wire the context-interception hooks into Claude Code
+
+```bash
+node cli/moorai-hook.mjs install     # registers PreToolUse hooks in ~/.claude/settings.json
+node cli/moorai-hook.mjs uninstall   # removes only MoorAI's entries
+```
+
+Now a `Read` of a `.env`, a secret in an MCP tool-call argument, or a call to an
+unapproved MCP server is blocked before it reaches the agent — content-free,
+fails open (governance, not a sandbox).
+
+## Coverage
+
+| | |
+|---|---|
+| **Agents** | Claude Code (full hook enforcement) · Codex / Copilot CLI (detection-only — no equivalent deny hook) |
+| **Surfaces** | prompts · AI outputs · files read into context · MCP tool calls · pasted images (OCR) · RAG/index payloads |
+| **Platforms** | macOS · Windows |
+| **Detects** | secrets · PII / PHI · source-code leakage · prompt injection · destructive commands · second-order/hidden-instruction injection |
 
 ## How it works
 
-1. **Review on the device.** Each prompt is checked locally against your policy (a 40+ threat
-   matrix + content rules) in the moment — content never leaves the machine.
-2. **Coach · alert · block.** Let it through, nudge the user, or stop it — per the policy you set
-   centrally, per tenant and per device.
-3. **Central visibility.** A web console shows posture, device inventory, alerts and compliance —
-   from **redacted metadata only** (category, risk, a one-way hash), never prompt content.
+A small Rust (Tauri) host wraps the agent's terminal; a local webview runs the detection engine. Prompts, file reads, tool calls, and outputs are checked against a 40+ threat matrix + content rules + org-defined detector packs — entirely on the device. A separate, proprietary **management console** adds a multi-tenant dashboard, SSO, fleet policy, and content-free compliance exports (AIBOM, EU AI Act records, board AI-readiness report, SIEM streaming). Open-core: this agent is AGPL; the console is commercial.
 
-## Repository layout
+## Learn more
 
-| Path | What |
-|------|------|
-| `data/threats.json` | The threat rule-base (source of truth) |
-| `data/detectors.js`, `data/content-rules.js` | Deterministic detection patterns (EN + HE) |
-| `src/engine.js` | Detection engine — scans prompts/output, risk-ranked findings |
-| `src/app.js`, `index.html`, `src/styles.css` | The guarded host UI (webview) |
-| `src-tauri/` | Native host (Rust + Tauri) — the on-device PTY that runs the agent |
-| `src-tauri/src/platform.rs`, `src-tauri/src/winsec.rs` | Per-OS shims (macOS/Windows) + native Windows security posture |
-| `cli/curaiq-guard.mjs` | Standalone CLI guard that wraps an agent |
-| `docs/` | Architecture, capability spec, release & signing |
-
-## Develop
-
-The webview detection core runs over plain HTTP (ES modules + `fetch`):
-
-```bash
-python3 -m http.server 8000   # then open http://localhost:8000
-```
-
-Wrap an agent from the CLI with the standalone guard:
-
-```bash
-npm run guard -- "summarize this for john@acme.com, api_key=sk-..."   # interactive
-npm run guard -- --decide redact "..."                                # non-interactive
-```
-
-Build the native macOS app (DMG, signed + notarized): see [docs/RELEASE.md](docs/RELEASE.md) and
-[docs/SIGNING.md](docs/SIGNING.md). The **Windows** installer (NSIS) is built in CI on a
-`windows-latest` runner — push a version tag to trigger
-[`.github/workflows/release-windows.yml`](.github/workflows/release-windows.yml). Architecture:
-[docs/CAPABILITY_SPEC.md](docs/CAPABILITY_SPEC.md).
-
-## Privacy posture
-
-Review happens **on the device**; prompt/response content is never stored or sent to the server.
-Only redacted metadata (category, risk level, a content hash, device/user label) reaches the
-console. Secrets are encrypted at rest (AES-256-GCM); sessions are HMAC-signed. See a running
-instance's `/privacy` page.
-
-## Security
-
-Found a vulnerability? Please follow [SECURITY.md](SECURITY.md) — **do not** open a public issue
-for security reports.
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md). By contributing you agree your contributions are licensed
-under the project license.
+- **Website & comparisons** — [glick.run/moorai](https://glick.run/moorai.html)
+- **How it stacks up** — vs [Lakera](https://glick.run/moorai-vs-lakera.html) · [Prompt Security](https://glick.run/moorai-vs-prompt-security.html) · [BigID](https://glick.run/moorai-vs-bigid.html) · [Harmonic](https://glick.run/moorai-vs-harmonic.html) · [Zenity](https://glick.run/moorai-vs-zenity.html) · [Netskope](https://glick.run/moorai-vs-netskope.html)
 
 ## License
 
-CuraIQ is licensed under the **GNU Affero General Public License v3.0** ([LICENSE](LICENSE)). The
-AGPL's network-use clause means that if you run a modified CuraIQ server as a network service, you
-must make your modified source available to its users. Copyright © 2026 Itay Glick and CuraIQ
-contributors.
+The MoorAI community agent is licensed under [AGPL-3.0](LICENSE). The management server is a separate, proprietary product.

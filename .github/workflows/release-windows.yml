@@ -1,6 +1,6 @@
 name: release-windows
 
-# Builds the CuraIQ Windows agent (NSIS installer) on a native windows-latest runner — the reliable
+# Builds the MoorAI Windows agent (NSIS installer) on a native windows-latest runner — the reliable
 # path, since the app depends on C crates (ring/TLS) that don't cross-compile from macOS. The macOS
 # DMG is built + notarized separately via `npm run release` on a Mac.
 #
@@ -46,8 +46,8 @@ jobs:
         with:
           # Only create a Release for tag builds; manual runs just build (artifact uploaded below).
           tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
-          releaseName: "CuraIQ ${{ github.ref_name }} (Windows)"
-          releaseBody: "Windows installer for the CuraIQ agent. Download the `-setup.exe` below."
+          releaseName: "MoorAI ${{ github.ref_name }} (Windows)"
+          releaseBody: "Windows installer for the MoorAI agent. Download the `-setup.exe` below."
           releaseDraft: false
           prerelease: false
           args: --bundles nsis
@@ -56,7 +56,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v5
         with:
-          name: curaiq-windows-setup
+          name: moorai-windows-setup
           path: |
             src-tauri/target/release/bundle/nsis/*-setup.exe
             src-tauri/target/release/bundle/nsis/*-setup.exe.sig

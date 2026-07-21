@@ -65,7 +65,7 @@ function printContent(content, enforce) {
 }
 
 function printFindings(findings) {
-  console.error(`\n${C.bold}CuraIQ pre-flight review${C.off} ${C.dim}— ${findings.length} issue(s) before sending to claude -p${C.off}\n`);
+  console.error(`\n${C.bold}MoorAI pre-flight review${C.off} ${C.dim}— ${findings.length} issue(s) before sending to claude -p${C.off}\n`);
   for (const f of findings) {
     const c = color(f.threat.riskLevel);
     console.error(`  ${c}● ${f.mode === "coach" ? "COACH" : f.threat.riskLevel}${C.off}  #${f.threat.id} ${f.threat.threat}  ${C.dim}[${f.threat.category}]${C.off}`);
@@ -100,7 +100,7 @@ function runClaude(prompt) {
     child.on("close", (code) => {
       const flagged = engine.scan(out, "output").filter((f) => action(f) !== "disabled");
       const visible = flagged.filter((f) => action(f) !== "alert");
-      if (visible.length) { console.error(`\n${C.org}⚠ CuraIQ output review — ${visible.length} finding(s) in the reply:${C.off}`); printFindings(visible); }
+      if (visible.length) { console.error(`\n${C.org}⚠ MoorAI output review — ${visible.length} finding(s) in the reply:${C.off}`); printFindings(visible); }
       const mask = policy?.outputRedaction === true || flagged.some((f) => action(f) === "block" || action(f) === "justify");
       if (mask) console.error(`${C.org}↻ masking flagged spans in the reply${C.off}`);
       process.stdout.write(mask ? engine.redact(out, "output") : out);
@@ -136,7 +136,7 @@ async function main() {
   const blockedContent = allContent.filter((c) => cp[c.ruleId] === "block");
 
   if (!findings.length && !content.length) {
-    console.error(`${C.green}✓ CuraIQ: clean — forwarding to claude -p${C.off}\n`);
+    console.error(`${C.green}✓ MoorAI: clean — forwarding to claude -p${C.off}\n`);
     process.exit(await runClaude(prompt));
   }
 

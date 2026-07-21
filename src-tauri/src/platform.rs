@@ -91,7 +91,7 @@ pub fn is_signed() -> bool {
     #[cfg(target_os = "macos")]
     {
         if let Ok(exe) = std::env::current_exe() {
-            // exe = .../CuraIQ.app/Contents/MacOS/curaiq → the .app bundle is 3 levels up.
+            // exe = .../MoorAI.app/Contents/MacOS/curaiq → the .app bundle is 3 levels up.
             if let Some(bundle) = exe.ancestors().nth(3) {
                 if let Ok(out) = std::process::Command::new("codesign").arg("-dvv").arg(bundle).output() {
                     for line in String::from_utf8_lossy(&out.stderr).lines() {
@@ -132,9 +132,9 @@ pub fn is_signed() -> bool {
 
 fn env_override_key(tool: &str) -> &'static str {
     match tool {
-        "codex" => "CuraIQ_CODEX",
-        "copilot" => "CuraIQ_COPILOT",
-        _ => "CuraIQ_CLAUDE",
+        "codex" => "MoorAI_CODEX",
+        "copilot" => "MoorAI_COPILOT",
+        _ => "MoorAI_CLAUDE",
     }
 }
 
@@ -230,7 +230,7 @@ fn sandbox_profile_path() -> Option<String> {
     std::fs::create_dir_all(&dir).ok()?;
     let path = format!("{dir}/agent-sandbox.sb");
     let profile = "(version 1)\n\
-;; CuraIQ agent isolation (experimental) — governance sandbox. Allow normal operation; deny writes\n\
+;; MoorAI agent isolation (experimental) — governance sandbox. Allow normal operation; deny writes\n\
 ;; to system / app / boot locations so the agent cannot modify the OS or install persistence.\n\
 (allow default)\n\
 (deny file-write*\n\

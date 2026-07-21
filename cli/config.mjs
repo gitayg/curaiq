@@ -6,8 +6,8 @@ import { join } from "node:path";
 // installer (~/.curaiq/config.json), with env overrides and a localhost fallback.
 export function loadConfig() {
   const fallback = {
-    serverUrl: process.env.CuraIQ_SERVER || "http://localhost:8787",
-    tenant: process.env.CuraIQ_TENANT || "unprovisioned"
+    serverUrl: process.env.MoorAI_SERVER || "http://localhost:8787",
+    tenant: process.env.MoorAI_TENANT || "unprovisioned"
   };
   // The Rust host writes ~/.curaiq/config.json; older installs used ~/.raiseme. Prefer the former,
   // fall back to the latter, then to env/localhost.

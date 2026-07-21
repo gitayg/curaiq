@@ -24,26 +24,26 @@ struct Term {
 
 #[tauri::command]
 fn term_open(app: tauri::AppHandle, state: tauri::State<Term>, cols: u16, rows: u16, tool: Option<String>) -> Result<(), String> {
-    // Which agent CLI to launch — constrained to the ones CuraIQ supports.
+    // Which agent CLI to launch — constrained to the ones MoorAI supports.
     let tool = match tool.as_deref() {
         Some("codex") => "codex",
         Some("copilot") => "copilot",
         _ => "claude",
     };
-    // #3 — host-side policy enforcement. The CuraIQ app itself refuses to launch an agent the
+    // #3 — host-side policy enforcement. The MoorAI app itself refuses to launch an agent the
     // admin hasn't allowed, so the picker's restriction is real at the launch boundary (not just
     // UI a devtools user could invoke around). Claude is the always-available baseline; codex/
     // copilot require an allow confirmed with the server. This can't stop a user running the CLI
-    // entirely outside CuraIQ — that's inherent to their own machine — it's governance, not a sandbox.
+    // entirely outside MoorAI — that's inherent to their own machine — it's governance, not a sandbox.
     if tool != "claude" && !tool_allowed(tool) {
-        let _ = app.emit("term-data", format!("\x1b[31m[CuraIQ] {tool} is not permitted by your organization's policy.\x1b[0m\r\n"));
+        let _ = app.emit("term-data", format!("\x1b[31m[MoorAI] {tool} is not permitted by your organization's policy.\x1b[0m\r\n"));
         return Err(format!("{tool} not permitted by policy"));
     }
     let pair = native_pty_system()
         .openpty(PtySize { rows, cols, pixel_width: 0, pixel_height: 0 })
         .map_err(|e| e.to_string())?;
 
-    let _ = app.emit("term-data", format!("\x1b[2m[CuraIQ] launching {tool}…\x1b[0m\r\n"));
+    let _ = app.emit("term-data", format!("\x1b[2m[MoorAI] launching {tool}…\x1b[0m\r\n"));
 
     let bin = find_tool(tool).ok_or(format!("{tool} CLI not found"))?;
     // Experimental opt-in host isolation: launch the agent inside a sandbox when enabled in config.
@@ -154,7 +154,7 @@ fn app_version() -> &'static str {
 }
 
 // Resolve an agent CLI binary (GUI/minimal-PATH safe). Each tool has an env override
-// (CuraIQ_CLAUDE / CuraIQ_CODEX / CuraIQ_COPILOT) plus the usual per-platform install locations.
+// (MoorAI_CLAUDE / MoorAI_CODEX / MoorAI_COPILOT) plus the usual per-platform install locations.
 fn find_tool(tool: &str) -> Option<String> { platform::find_tool(tool) }
 
 fn find_claude() -> Option<String> { find_tool("claude") }
@@ -269,7 +269,7 @@ fn open_url(url: String) -> Result<(), String> {
     Ok(())
 }
 
-// Inventories other AI tools installed on the device + the OS, to report to the CuraIQ server.
+// Inventories other AI tools installed on the device + the OS, to report to the MoorAI server.
 #[tauri::command]
 fn device_ai_tools() -> serde_json::Value { platform::ai_tools() }
 
@@ -498,7 +498,7 @@ fn set_agent_auth(method: String, token: String) -> Result<(), String> {
     Ok(())
 }
 
-// Fallback agent path: the local claude CLI (uses its own OAuth login). CuraIQ has already
+// Fallback agent path: the local claude CLI (uses its own OAuth login). MoorAI has already
 // pre-flight reviewed the prompt on the JS side.
 #[tauri::command]
 fn run_agent(prompt: String) -> Result<String, String> {
@@ -545,5 +545,5 @@ pub fn run() {
         .manage(Term::default())
         .invoke_handler(tauri::generate_handler![native_log, app_version, identity, run_agent, save_provision, set_agent_auth, open_url, open_login_terminal, restart_app, check_and_install_update, about_info, term_open, term_input, term_resize, device_ai_tools, device_ai_assets, device_mcp, os_patch_status, device_browsers, device_posture, device_accounts, dir_sensitive])
         .run(tauri::generate_context!())
-        .expect("error while running CuraIQ");
+        .expect("error while running MoorAI");
 }

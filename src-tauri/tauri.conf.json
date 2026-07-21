@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "CuraIQ",
-  "version": "0.25.0",
+  "productName": "MoorAI",
+  "version": "0.26.0",
   "identifier": "run.glick.curaiq",
   "build": {
     "frontendDist": "../.tauridist",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "CuraIQ — Managed AI Host",
+        "title": "MoorAI — Managed AI Host",
         "width": 1200,
         "height": 820,
         "minWidth": 900,

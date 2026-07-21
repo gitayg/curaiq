@@ -134,7 +134,7 @@ fn bitlocker() -> serde_json::Value {
     }
 }
 
-// The security-posture bundle reported to the CuraIQ server (metadata only, no content).
+// The security-posture bundle reported to the MoorAI server (metadata only, no content).
 pub fn security_posture() -> serde_json::Value {
     serde_json::json!({
         "antivirus": query_av(),

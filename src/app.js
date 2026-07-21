@@ -90,7 +90,7 @@ function renderDeviceInfo(dev) {
     : `<span class="di-warn">${ICON.warn} ${p.count} OS update${p.count === 1 ? "" : "s"} pending</span>${p.titles && p.titles.length ? ` — ${esc(p.titles.join("; "))}` : ""}`;
   el.innerHTML = `<span class="enroll-label">This device — ${esc(dev.os)} ${esc(dev.osVersion || "")}</span>
     <div class="di-sub">OS patches: ${patchLine}</div>
-    <div class="di-sub">Other AI tools detected on this device (reported to CuraIQ):</div>
+    <div class="di-sub">Other AI tools detected on this device (reported to MoorAI):</div>
     <div class="di-tools">${tools.length
       ? tools.map((t) => `<span class="tool-chip">${esc(t)}</span>`).join("")
       : '<span class="di-none">none detected</span>'}</div>
@@ -155,7 +155,7 @@ function switchTool(t) {
   if (t === TOOL) return;
   TOOL = t;
   localStorage.setItem("raiseme.tool", TOOL);
-  if (term) { term.reset(); term.write(`\x1b[2m[CuraIQ] switching to ${TOOL_LABELS[TOOL] || TOOL}…\x1b[0m\r\n`); }
+  if (term) { term.reset(); term.write(`\x1b[2m[MoorAI] switching to ${TOOL_LABELS[TOOL] || TOOL}…\x1b[0m\r\n`); }
   reconnectTerminal();
 }
 
@@ -269,8 +269,8 @@ function initTerminal() {
     if (TAURI?.core?.invoke && TAURI?.event?.listen) {
       nativeTerm = true;
       TAURI.event.listen("term-data", (e) => { term.write(e.payload); reviewOutput(e.payload); });
-      TAURI.event.listen("term-exit", () => term.write(`\r\n\x1b[2m[CuraIQ] ${TOOL_LABELS[TOOL] || TOOL} exited.\x1b[0m\r\n`));
-      TAURI.core.invoke("term_open", { cols: term.cols, rows: term.rows, tool: TOOL }).catch((e) => term.write(`\r\n[CuraIQ] ${e}\r\n`));
+      TAURI.event.listen("term-exit", () => term.write(`\r\n\x1b[2m[MoorAI] ${TOOL_LABELS[TOOL] || TOOL} exited.\x1b[0m\r\n`));
+      TAURI.core.invoke("term_open", { cols: term.cols, rows: term.rows, tool: TOOL }).catch((e) => term.write(`\r\n[MoorAI] ${e}\r\n`));
     } else {
       connectTerminal();
     }
@@ -327,7 +327,7 @@ function connectTerminal() {
   sock.binaryType = "arraybuffer";
   sock.onmessage = (e) => { const d = typeof e.data === "string" ? e.data : new Uint8Array(e.data); term.write(d); if (typeof e.data === "string") reviewOutput(e.data); };
   sock.onopen = () => { lastCols = 0; lastRows = 0; pushSize(); };
-  sock.onclose = () => term.write("\r\n\x1b[2m[CuraIQ] terminal disconnected.\x1b[0m\r\n");
+  sock.onclose = () => term.write("\r\n\x1b[2m[MoorAI] terminal disconnected.\x1b[0m\r\n");
 }
 
 function reconnectTerminal() {

@@ -1,5 +1,5 @@
-// #1/#2/#3 — shared, side-effect-free core for the CuraIQ PreToolUse hook. Kept separate from the
-// stdin/stdout entrypoint (curaiq-hook.mjs) so the decision logic is unit-testable without spawning a
+// #1/#2/#3 — shared, side-effect-free core for the MoorAI PreToolUse hook. Kept separate from the
+// stdin/stdout entrypoint (moorai-hook.mjs) so the decision logic is unit-testable without spawning a
 // process. Governance, not a sandbox: on any error or missing policy the caller fails OPEN (allows).
 
 import { readFileSync } from "node:fs";

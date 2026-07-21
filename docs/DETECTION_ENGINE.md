@@ -1,4 +1,4 @@
-# CuraIQ — Detection Engine Design
+# MoorAI — Detection Engine Design
 
 **Version:** 0.1 · Companion to [CAPABILITY_SPEC.md](CAPABILITY_SPEC.md) (v0.6)
 

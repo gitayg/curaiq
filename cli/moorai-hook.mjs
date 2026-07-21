@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// CuraIQ PreToolUse hook (#1/#2/#3). Registered in the agent's settings.json for the Read, Bash, and
+// MoorAI PreToolUse hook (#1/#2/#3). Registered in the agent's settings.json for the Read, Bash, and
 // mcp__* tools; runs BEFORE each matched tool call. Reads the tool input on stdin and, per policy,
 // blocks (Claude Code deny) a secret/PII being read into context (#1), a secret shipped as an MCP
 // tool-call argument (#2), or a call to an MCP server that isn't on the org allow-list (#3).
@@ -7,9 +7,9 @@
 // Governance, not a sandbox: any error, missing policy, or unsupported tool → EXIT 0 (allow). Reports
 // are content-free (category + risk + one-way hash), never the file/arg content or the matched span.
 //
-//   node curaiq-hook.mjs            # hook mode (reads stdin)
-//   node curaiq-hook.mjs install    # register in ~/.claude/settings.json (idempotent)
-//   node curaiq-hook.mjs uninstall  # remove only CuraIQ's entries
+//   node moorai-hook.mjs            # hook mode (reads stdin)
+//   node moorai-hook.mjs install    # register in ~/.claude/settings.json (idempotent)
+//   node moorai-hook.mjs uninstall  # remove only MoorAI's entries
 
 import { readFileSync, writeFileSync, mkdirSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -23,7 +23,7 @@ const RANK = { allow: 1, ask: 2, deny: 3 };
 
 // ---- install / uninstall (settings.json merge) ----
 function settingsPath() { return join(os.homedir(), ".claude", "settings.json"); }
-function isCuraiq(entry) { return JSON.stringify(entry).includes("curaiq-hook"); }
+function isCuraiq(entry) { return JSON.stringify(entry).includes("moorai-hook"); }
 function readSettings() { try { return JSON.parse(readFileSync(settingsPath(), "utf8")); } catch { return {}; } }
 function writeSettings(s) { mkdirSync(dirname(settingsPath()), { recursive: true }); writeFileSync(settingsPath(), JSON.stringify(s, null, 2)); }
 
@@ -35,12 +35,12 @@ function installHooks() {
   const cur = Array.isArray(s.hooks.PreToolUse) ? s.hooks.PreToolUse : [];
   s.hooks.PreToolUse = [...cur.filter((e) => !isCuraiq(e)), entry("Read"), entry("Bash"), entry("mcp__.*")];
   writeSettings(s);
-  console.error(`CuraIQ hooks installed in ${settingsPath()}`);
+  console.error(`MoorAI hooks installed in ${settingsPath()}`);
 }
 function uninstallHooks() {
   const s = readSettings();
   if (Array.isArray(s.hooks?.PreToolUse)) { s.hooks.PreToolUse = s.hooks.PreToolUse.filter((e) => !isCuraiq(e)); writeSettings(s); }
-  console.error("CuraIQ hooks removed");
+  console.error("MoorAI hooks removed");
 }
 
 // ---- policy load (cached; per-call HTTP would be too slow) ----
@@ -75,7 +75,7 @@ function readFileCapped(fp) {
 
 function emit(decision, reason) {
   if (decision === "allow") process.exit(0);
-  process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: decision === "deny" ? "deny" : "ask", permissionDecisionReason: `CuraIQ: ${reason}` } }));
+  process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: decision === "deny" ? "deny" : "ask", permissionDecisionReason: `MoorAI: ${reason}` } }));
   process.exit(0);
 }
 

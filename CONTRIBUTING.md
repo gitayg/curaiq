@@ -1,6 +1,6 @@
-# Contributing to CuraIQ
+# Contributing to MoorAI
 
-Thanks for your interest. CuraIQ is a security tool, so contributions are held to a high bar for
+Thanks for your interest. MoorAI is a security tool, so contributions are held to a high bar for
 clarity and safety.
 
 ## Ground rules
@@ -34,5 +34,5 @@ python3 -m http.server 8000            # exercise the webview UI
 
 ## Licensing of contributions
 
-CuraIQ is licensed under **AGPL-3.0**. By submitting a contribution you agree it is licensed under
+MoorAI is licensed under **AGPL-3.0**. By submitting a contribution you agree it is licensed under
 the same terms.

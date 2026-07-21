@@ -1,6 +1,6 @@
 {
   "meta": {
-    "name": "CuraIQ Threat Rule-Base",
+    "name": "MoorAI Threat Rule-Base",
     "version": "0.4.0",
     "description": "AI-security threat matrix for office workers, translated to English. Each threat is a detection rule: example = trigger context, response = intervention. riskScore = severity x likelihood.",
     "scoring": {

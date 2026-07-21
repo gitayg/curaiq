@@ -147,7 +147,7 @@ export function reportIdentity() {
   }).catch(() => {});
 }
 
-// Once the client runs, report the device's other AI tools + OS to the CuraIQ server.
+// Once the client runs, report the device's other AI tools + OS to the MoorAI server.
 export async function reportDevice() {
   const invoke = window.__TAURI__?.core?.invoke;
   if (!invoke) return null;
