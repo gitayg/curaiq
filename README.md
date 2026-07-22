@@ -6,7 +6,7 @@
 
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-ff4d6d.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-e4e4ef.svg)](#install)
-[![Build: Windows](https://github.com/gitayg/curaiq/actions/workflows/release-windows.yml/badge.svg)](https://github.com/gitayg/curaiq/actions)
+[![Build: Windows](https://github.com/gitayg/moorai/actions/workflows/release-windows.yml/badge.svg)](https://github.com/gitayg/moorai/actions)
 
 **MoorAI reviews what your developers send to AI coding agents — and what those agents read, run, and reply — right on the device, before anything is exposed.** Secrets, PII, and source code never leave the machine to be checked. Your security team sees content-free signals, never the prompts.
 
@@ -39,8 +39,8 @@ Because you can read the code. The agent is **AGPL-3.0 and open source** — the
 
 ## Install
 
-**macOS** — download the signed, notarized `.dmg` from [Releases](https://github.com/gitayg/curaiq/releases).
-**Windows** — download the signed `-setup.exe` from [Releases](https://github.com/gitayg/curaiq/releases) (built in the open by CI).
+**macOS** — download the signed, notarized `.dmg` from [Releases](https://github.com/gitayg/moorai/releases).
+**Windows** — download the signed `-setup.exe` from [Releases](https://github.com/gitayg/moorai/releases) (built in the open by CI).
 
 Community edition: runs standalone, local policy control, no account required.
 
